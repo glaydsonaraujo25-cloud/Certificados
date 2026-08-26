@@ -12,6 +12,7 @@ import { SettingsView } from './views/SettingsView';
 import { ApiManagementView } from './views/ApiManagementView';
 import { AuditView } from './views/AuditView';
 import { BackupView } from './views/BackupView';
+import { ReportsView } from './views/ReportsView';
 
 const MainRouter: React.FC = () => {
   const { currentView } = useApp();
@@ -38,6 +39,8 @@ const MainRouter: React.FC = () => {
         return <AuditView />;
       case 'backup':
         return <BackupView />;
+      case 'reports':
+        return <ReportsView />;
       case 'settings':
       case 'templates':
         return <SettingsView />;

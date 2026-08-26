@@ -1,0 +1,6 @@
+{
+  "name": "CertifyAI - Gerador e Validador de Certificados Digitais",
+  "description": "Sistema completo com API REST segura para emissão, consulta, integridade criptográfica SHA-256 e validação pública de certificados com suporte a integrações LMS e ERP.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -16,6 +16,7 @@ import {
   X,
   History,
   DatabaseBackup,
+  FileBarChart,
 } from 'lucide-react';
 
 interface LayoutProps {
@@ -43,6 +44,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     { id: 'courses', label: 'Cursos', icon: BookOpen },
     { id: 'batch-emission', label: 'Emissão em Lote', icon: Layers },
     { id: 'validate', label: 'Validar', icon: CheckCircle },
+    { id: 'reports', label: 'Relatórios', icon: FileBarChart },
     { id: 'audit', label: 'Auditoria', icon: History },
     { id: 'backup', label: 'Backup', icon: DatabaseBackup },
     { id: 'api', label: 'API & Integrações', icon: Server },

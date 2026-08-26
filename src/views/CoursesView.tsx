@@ -37,7 +37,7 @@ export const CoursesView: React.FC = () => {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [workloadHours, setWorkloadHours] = useState(40);
-  const [instructorName, setInstructorName] = useState(institution.signatureName || '');
+  const [instructorName, setInstructorName] = useState(institution.signatoryName || '');
   const [institutionName, setInstitutionName] = useState(institution.name || '');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -54,7 +54,7 @@ export const CoursesView: React.FC = () => {
     setName('');
     setDescription('');
     setWorkloadHours(40);
-    setInstructorName(institution.signatureName || '');
+    setInstructorName(institution.signatoryName || '');
     setInstitutionName(institution.name || '');
     setStartDate(new Date().toISOString().split('T')[0]);
     setEndDate(new Date().toISOString().split('T')[0]);

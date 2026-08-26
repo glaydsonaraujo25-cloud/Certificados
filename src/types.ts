@@ -14,16 +14,26 @@ export interface UserSession {
   avatarUrl?: string;
 }
 
+export interface SyllabusItem {
+  id?: string;
+  discipline: string;
+  workload: string;
+  grade: string;
+  instructor: string;
+}
+
 export interface InstitutionSettings {
   name: string;
+  institutionCnpj?: string;
   logoUrl?: string;
   email?: string;
   phone?: string;
   website?: string;
   city?: string;
   state?: string;
-  signatureName?: string;
-  signatureRole?: string;
+  signatoryName?: string;
+  signatoryRole?: string;
+  signatoryCpf?: string;
   signatureImageUrl?: string;
   secondSignatureName?: string;
   secondSignatureRole?: string;
@@ -32,15 +42,20 @@ export interface InstitutionSettings {
   backgroundImageUrl?: string;
   borderStyle?: 'official-security' | 'classic-gold' | 'modern-executive' | 'academic-formal';
   defaultCertificateText?: string;
-  codeFormat?: 'sequential' | 'alphanumeric';
+  legalInstruction?: string;
+  contranResolution?: string;
+  validityText?: string;
+  codeFormat?: 'sequential' | 'alphanumeric' | 'cvte';
   showQrCode?: boolean;
   showSeal?: boolean;
   sealText?: string;
+  showSyllabusOnVerso?: boolean;
 }
 
 export interface Course {
   id: string;
   name: string;
+  courseSubhead?: string;
   description: string;
   workloadHours: number;
   instructorName: string;
@@ -48,6 +63,9 @@ export interface Course {
   startDate: string;
   endDate: string;
   modality: Modality;
+  legalInstruction?: string;
+  contranResolution?: string;
+  syllabus?: SyllabusItem[];
   createdAt: string;
   updatedAt?: string;
 }
@@ -57,6 +75,8 @@ export interface Student {
   fullName: string;
   email: string;
   documentNumber?: string; // CPF or ID
+  registrationNumber?: string; // Nº Registro CNH
+  cnhCategory?: string; // Categoria (ex: "AD", "B", "D", "E")
   courseId?: string;
   completionDate?: string;
   notes?: string;
@@ -78,19 +98,27 @@ export interface CertificateThemeSettings {
 export interface Certificate {
   id: string;
   uuid: string; // Unique Universal Identifier v4
-  code: string; // Public validation code, e.g. CERT-2026-000001
+  code: string; // Public validation code, e.g. 006/CVTE/2026 or CERT-2026-000001
   studentId: string;
   studentName: string;
   studentEmail?: string;
-  studentDocument?: string;
+  studentDocument?: string; // CPF
+  registrationNumber?: string; // Nº REGISTRO CNH
+  cnhCategory?: string; // Categoria CNH, ex: "AD"
   courseId: string;
   courseName: string;
+  courseSubhead?: string; // ex: "Condutores de Veículos de Transporte de Emergência"
   courseDescription?: string;
   workloadHours: number;
   modality: Modality;
   instructorName: string;
   institutionName: string;
+  institutionCnpj?: string;
   institutionLogoUrl?: string;
+  legalInstruction?: string; // ex: "Instrução Nº 592, de 10 de agosto de 2020/Detran-DF"
+  contranResolution?: string; // ex: "Resolução Nº 1.020/2025 do CONTRAN"
+  validityText?: string; // ex: "com validade de cinco anos após o término do curso"
+  syllabus?: SyllabusItem[];
   issueDate: string; // YYYY-MM-DD (Data de emissão)
   expiresAt?: string; // YYYY-MM-DD (Data de expiração/validade)
   startDate?: string;
@@ -98,6 +126,7 @@ export interface Certificate {
   location?: string;
   signatoryName: string;
   signatoryRole: string;
+  signatoryCpf?: string;
   signatureImageUrl?: string;
   secondSignatoryName?: string;
   secondSignatoryRole?: string;

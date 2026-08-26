@@ -1,58 +1,96 @@
 import React, { useState } from 'react';
-import { Certificate } from '../types';
-import { CertificateDocument } from './CertificateDocument';
-import { exportCertificateToPdf } from '../utils/pdfGenerator';
-import { formatVerificationUrl } from '../utils/codeGenerator';
-import { useApp } from '../context/AppContext';
 import {
   X,
   Download,
-  Printer,
   Copy,
   Check,
+  Printer,
   Ban,
   ShieldCheck,
-  Loader2,
+  Calendar,
   User,
   BookOpen,
   Fingerprint,
-  Calendar,
+  Loader2,
   AlertTriangle,
+  FileText,
+  Layers,
 } from 'lucide-react';
+import { Certificate } from '../types';
+import { useApp } from '../context/AppContext';
+import { CertificateFrontPage, CertificateBackPage } from './CertificateDocument';
+import { exportCertificateToPdf, exportTwoPageCertificateToPdf } from '../utils/pdfGenerator';
+import { formatVerificationUrl } from '../utils/codeGenerator';
+import { IntegrityVerificationResult } from '../utils/integrity';
 
 interface CertificateModalProps {
-  certificate: Certificate;
+  certificate: Certificate | null;
+  isOpen: boolean;
   onClose: () => void;
+  setCurrentView: (view: any) => void;
+  setValidationSearchCode: (code: string) => void;
 }
 
 export const CertificateModal: React.FC<CertificateModalProps> = ({
   certificate,
+  isOpen,
   onClose,
+  setCurrentView,
+  setValidationSearchCode,
 }) => {
-  const {
-    cancelCertificate,
-    setCurrentView,
-    setValidationSearchCode,
-    checkCertificateIntegrity,
-  } = useApp();
+  const { cancelCertificate, checkCertificateIntegrity } = useApp();
 
+  if (!isOpen || !certificate) return null;
+
+  const [activeTab, setActiveTab] = useState<'front' | 'back' | 'both'>('front');
   const [downloading, setDownloading] = useState(false);
   const [downloadStatus, setDownloadStatus] = useState('');
   const [copied, setCopied] = useState(false);
   const [copiedUuid, setCopiedUuid] = useState(false);
   const [showCancelPrompt, setShowCancelPrompt] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
-  const [integrityState, setIntegrityState] = useState<ReturnType<typeof checkCertificateIntegrity> | null>(null);
+  const [integrityState, setIntegrityState] = useState<IntegrityVerificationResult | null>(null);
 
   const verificationUrl = formatVerificationUrl(certificate.code);
 
-  const handleDownloadPdf = async () => {
+  const handleDownloadFullPdf = async () => {
     try {
       setDownloading(true);
-      await exportCertificateToPdf({
-        elementId: `modal-cert-${certificate.id}`,
+      await exportTwoPageCertificateToPdf({
+        frontElementId: `modal-front-export-${certificate.id}`,
+        backElementId: `modal-back-export-${certificate.id}`,
         studentName: certificate.studentName,
         courseName: certificate.courseName,
+        onProgress: (status) => setDownloadStatus(status),
+      });
+    } catch (err) {
+      console.error(err);
+      alert('Erro ao gerar o PDF de 2 páginas. Tentando baixar página única...');
+      try {
+        await exportCertificateToPdf({
+          elementId: `modal-front-export-${certificate.id}`,
+          studentName: certificate.studentName,
+          courseName: certificate.courseName,
+          onProgress: (status) => setDownloadStatus(status),
+        });
+      } catch (e) {
+        alert('Erro ao gerar o PDF.');
+      }
+    } finally {
+      setDownloading(false);
+      setDownloadStatus('');
+    }
+  };
+
+  const handleDownloadSinglePage = async (page: 'front' | 'back') => {
+    try {
+      setDownloading(true);
+      const elementId = page === 'front' ? `modal-front-export-${certificate.id}` : `modal-back-export-${certificate.id}`;
+      await exportCertificateToPdf({
+        elementId,
+        studentName: certificate.studentName,
+        courseName: certificate.courseName,
+        pageSuffix: page === 'front' ? 'Frente' : 'Verso',
         onProgress: (status) => setDownloadStatus(status),
       });
     } catch (err) {
@@ -102,11 +140,11 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/75 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200">
-      <div className="relative w-full max-w-5xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[92vh]">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/80 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 animate-in fade-in duration-200">
+      <div className="relative w-full max-w-6xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[95vh]">
         {/* Header Bar */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
-          <div className="flex flex-wrap items-center gap-3">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/70">
+          <div className="flex flex-wrap items-center gap-2.5">
             <div
               className={`px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 ${
                 certificate.status === 'active'
@@ -133,34 +171,58 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({
                 </>
               )}
             </div>
-            
-            <div className="font-mono text-xs font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700">
+
+            <div className="font-mono text-xs font-bold text-slate-800 dark:text-slate-200 bg-slate-200/80 dark:bg-slate-800 px-2.5 py-1 rounded-lg border border-slate-300 dark:border-slate-700">
               {certificate.code}
             </div>
 
-            {certificate.uuid && (
+            {/* Page Tabs */}
+            <div className="flex items-center bg-slate-200/70 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-300/80 dark:border-slate-700 text-xs font-medium ml-1">
               <button
                 type="button"
-                onClick={handleCopyUuid}
-                className="hidden lg:flex items-center gap-1 text-[11px] font-mono text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 bg-slate-100/70 dark:bg-slate-800/70 px-2 py-0.5 rounded"
-                title="Clique para copiar UUID"
+                onClick={() => setActiveTab('front')}
+                className={`px-3 py-1 rounded-md transition-all cursor-pointer ${
+                  activeTab === 'front'
+                    ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs font-bold'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                }`}
               >
-                <Fingerprint className="w-3 h-3 text-indigo-500" />
-                <span>UUID: {certificate.uuid.substring(0, 8)}...</span>
-                {copiedUuid && <span className="text-emerald-600 font-bold">✓</span>}
+                Página 1: Frente
               </button>
-            )}
+              <button
+                type="button"
+                onClick={() => setActiveTab('back')}
+                className={`px-3 py-1 rounded-md transition-all cursor-pointer ${
+                  activeTab === 'back'
+                    ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs font-bold'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                }`}
+              >
+                Página 2: Verso
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('both')}
+                className={`px-3 py-1 rounded-md transition-all cursor-pointer hidden md:inline-block ${
+                  activeTab === 'both'
+                    ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs font-bold'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                }`}
+              >
+                Ambas as Páginas
+              </button>
+            </div>
           </div>
 
           {/* Action Buttons */}
           <div className="flex items-center gap-2">
             <button
               onClick={handleVerifyIntegrity}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900 border border-indigo-200 dark:border-indigo-800/60 transition-colors"
+              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900 border border-indigo-200 dark:border-indigo-800/60 transition-colors"
               title="Executar verificação criptográfica dos dados"
             >
               <Fingerprint className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
-              <span>Verificar Integridade</span>
+              <span>Integridade</span>
             </button>
 
             <button
@@ -169,40 +231,41 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({
               title="Copiar link da página de validação"
             >
               {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-              <span>{copied ? 'Copiado!' : 'Copiar Link'}</span>
+              <span>{copied ? 'Copiado!' : 'Link'}</span>
             </button>
 
             <button
               onClick={handleGoToValidation}
-              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+              className="hidden md:flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
               title="Testar validação pública deste certificado"
             >
               <ShieldCheck className="w-3.5 h-3.5 text-indigo-500" />
               <span>Validar</span>
             </button>
 
+            {/* Download Full PDF (2 Pages) Button */}
             <button
-              onClick={handleDownloadPdf}
+              onClick={handleDownloadFullPdf}
               disabled={downloading}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition-colors disabled:opacity-50"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition-colors disabled:opacity-50 cursor-pointer"
             >
               {downloading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
-              <span>{downloading ? 'Baixando...' : 'Baixar PDF'}</span>
+              <span>{downloading ? 'Gerando...' : 'Baixar PDF Completo'}</span>
             </button>
 
             <button
               onClick={onClose}
-              className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
+              className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
         </div>
 
-        {/* Integrity Check Result Banner if clicked */}
+        {/* Integrity Check Result Banner */}
         {integrityState && (
           <div
-            className={`px-6 py-3 border-b text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 ${
+            className={`px-6 py-2.5 border-b text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 ${
               integrityState.isAuthentic
                 ? 'bg-emerald-50 dark:bg-emerald-950/70 border-emerald-200 dark:border-emerald-900 text-emerald-800 dark:text-emerald-200'
                 : 'bg-rose-50 dark:bg-rose-950/70 border-rose-200 dark:border-rose-900 text-rose-800 dark:text-rose-200'
@@ -215,15 +278,14 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({
                 <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
               )}
               <span>
-                <strong>Resultado da Integridade:</strong>{' '}
+                <strong>Integridade Criptográfica:</strong>{' '}
                 {integrityState.hasBeenTampered
                   ? 'Inconsistência detectada! Os dados foram alterados após a emissão.'
-                  : `Registro íntegro e autêntico (${integrityState.statusLabel}). Hash de emissão validado com sucesso.`}
+                  : `Registro autêntico e inalterado (${integrityState.statusLabel}). Hash SHA-256 verificado.`}
               </span>
             </div>
-
-            <span className="text-[11px] text-slate-500 dark:text-slate-400">
-              Operação registrada na trilha de auditoria
+            <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400">
+              Hash: {certificate.integrityHash?.substring(0, 16)}...
             </span>
           </div>
         )}
@@ -233,41 +295,77 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({
           <div className="bg-indigo-50 dark:bg-indigo-950/70 border-b border-indigo-100 dark:border-indigo-900 px-6 py-2 text-xs text-indigo-700 dark:text-indigo-300 flex items-center justify-between">
             <span className="flex items-center gap-2">
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              {downloadStatus || 'Processando renderização em alta definição...'}
+              {downloadStatus || 'Renderizando documento em alta resolução (300 DPI)...'}
             </span>
-            <span className="font-mono text-[10px]">A4 Landscape (297x210mm)</span>
+            <span className="font-mono text-[10px]">A4 Paisagem (297x210mm)</span>
           </div>
         )}
 
         {/* Cancelled Banner if applicable */}
         {certificate.status === 'cancelled' && (
-          <div className="bg-rose-50 dark:bg-rose-950/60 border-b border-rose-200 dark:border-rose-900 px-6 py-3 text-xs text-rose-800 dark:text-rose-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div className="bg-rose-50 dark:bg-rose-950/60 border-b border-rose-200 dark:border-rose-900 px-6 py-2.5 text-xs text-rose-800 dark:text-rose-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
               <strong>Atenção:</strong> Este certificado foi formalmente cancelado em{' '}
               {certificate.cancelledAt ? new Date(certificate.cancelledAt).toLocaleDateString('pt-BR') : ''}.
               {certificate.cancellationReason && (
-                <p className="text-rose-600 dark:text-rose-300 mt-0.5">
-                  Motivo registrado: "{certificate.cancellationReason}"
-                </p>
+                <span className="text-rose-600 dark:text-rose-300 ml-1">
+                  Motivo: "{certificate.cancellationReason}"
+                </span>
               )}
             </div>
-            {certificate.cancelledBy && (
-              <span className="text-[11px] text-rose-500 dark:text-rose-400">
-                Cancelado por: {certificate.cancelledBy}
-              </span>
-            )}
           </div>
         )}
 
         {/* Certificate Display Canvas */}
-        <div className="flex-1 overflow-auto p-4 sm:p-8 bg-slate-100 dark:bg-slate-950/70 flex justify-center items-center">
-          <div className="w-full flex justify-center transform scale-[0.85] sm:scale-100 origin-center transition-transform">
-            <CertificateDocument
-              certificate={certificate}
-              elementId={`modal-cert-${certificate.id}`}
-              isCancelled={certificate.status === 'cancelled'}
-            />
-          </div>
+        <div className="flex-1 overflow-auto p-4 sm:p-6 bg-slate-100 dark:bg-slate-950 flex flex-col items-center gap-6">
+          {/* Active Display */}
+          {(activeTab === 'front' || activeTab === 'both') && (
+            <div className="w-full flex flex-col items-center">
+              {activeTab === 'both' && (
+                <div className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                  <FileText className="w-3.5 h-3.5" /> Página 1: Frente
+                </div>
+              )}
+              <div className="transform scale-[0.7] sm:scale-[0.85] lg:scale-95 origin-top transition-transform shadow-xl rounded-lg overflow-hidden">
+                <CertificateFrontPage
+                  certificate={certificate}
+                  elementId={`modal-front-display-${certificate.id}`}
+                  isCancelled={certificate.status === 'cancelled'}
+                />
+              </div>
+            </div>
+          )}
+
+          {(activeTab === 'back' || activeTab === 'both') && (
+            <div className="w-full flex flex-col items-center">
+              {activeTab === 'both' && (
+                <div className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-4 mb-2 flex items-center gap-1.5">
+                  <Layers className="w-3.5 h-3.5" /> Página 2: Verso (Conteúdo Programático)
+                </div>
+              )}
+              <div className="transform scale-[0.7] sm:scale-[0.85] lg:scale-95 origin-top transition-transform shadow-xl rounded-lg overflow-hidden">
+                <CertificateBackPage
+                  certificate={certificate}
+                  elementId={`modal-back-display-${certificate.id}`}
+                  isCancelled={certificate.status === 'cancelled'}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Off-screen Export Containers (fixed 1050x742 for crisp PDF generation) */}
+        <div className="fixed -left-[9999px] -top-[9999px] pointer-events-none opacity-100">
+          <CertificateFrontPage
+            certificate={certificate}
+            elementId={`modal-front-export-${certificate.id}`}
+            isCancelled={certificate.status === 'cancelled'}
+          />
+          <CertificateBackPage
+            certificate={certificate}
+            elementId={`modal-back-export-${certificate.id}`}
+            isCancelled={certificate.status === 'cancelled'}
+          />
         </div>
 
         {/* Footer Meta & Cancellation Controls */}
@@ -288,34 +386,49 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({
           </div>
 
           <div className="flex items-center gap-3">
+            <button
+              onClick={() => handleDownloadSinglePage('front')}
+              className="text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 text-xs font-medium cursor-pointer"
+            >
+              Baixar só Frente
+            </button>
+            <span className="text-slate-300 dark:text-slate-700">|</span>
+            <button
+              onClick={() => handleDownloadSinglePage('back')}
+              className="text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 text-xs font-medium cursor-pointer"
+            >
+              Baixar só Verso
+            </button>
+
             {certificate.status === 'active' && (
               <>
+                <span className="text-slate-300 dark:text-slate-700">|</span>
                 {!showCancelPrompt ? (
                   <button
                     onClick={() => setShowCancelPrompt(true)}
                     className="text-rose-600 hover:text-rose-700 dark:text-rose-400 font-medium hover:underline flex items-center gap-1 cursor-pointer"
                   >
                     <Ban className="w-3 h-3" />
-                    Cancelar Certificado
+                    Cancelar
                   </button>
                 ) : (
                   <div className="flex items-center gap-2 bg-rose-50 dark:bg-rose-950 p-1.5 rounded-lg border border-rose-200 dark:border-rose-800">
                     <input
                       type="text"
-                      placeholder="Motivo do cancelamento..."
+                      placeholder="Motivo..."
                       value={cancelReason}
                       onChange={(e) => setCancelReason(e.target.value)}
-                      className="px-2 py-1 text-xs border rounded bg-white dark:bg-slate-800 border-rose-300 text-slate-800 dark:text-slate-200 w-48"
+                      className="px-2 py-0.5 text-xs border rounded bg-white dark:bg-slate-800 border-rose-300 text-slate-800 dark:text-slate-200 w-36"
                     />
                     <button
                       onClick={handleConfirmCancel}
-                      className="px-2 py-1 bg-rose-600 text-white rounded text-[11px] font-bold hover:bg-rose-700 cursor-pointer"
+                      className="px-2 py-0.5 bg-rose-600 text-white rounded text-[11px] font-bold hover:bg-rose-700 cursor-pointer"
                     >
                       Confirmar
                     </button>
                     <button
                       onClick={() => setShowCancelPrompt(false)}
-                      className="px-2 py-1 bg-slate-200 dark:bg-slate-700 rounded text-[11px] cursor-pointer"
+                      className="px-2 py-0.5 bg-slate-200 dark:bg-slate-700 rounded text-[11px] cursor-pointer"
                     >
                       Voltar
                     </button>
@@ -323,6 +436,8 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({
                 )}
               </>
             )}
+
+            <span className="text-slate-300 dark:text-slate-700">|</span>
             <button
               onClick={handlePrint}
               className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 flex items-center gap-1 cursor-pointer"
@@ -336,4 +451,3 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({
     </div>
   );
 };
-

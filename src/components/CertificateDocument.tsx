@@ -1,9 +1,18 @@
 import React from 'react';
-import { Certificate } from '../types';
+import { Certificate, SyllabusItem } from '../types';
+import { SGExEmblem } from './emblems/SGExEmblem';
+import { BAdmQgexEmblem } from './emblems/BAdmQgexEmblem';
+import { TopFiligree, BottomFiligree } from './emblems/FiligreeOrnaments';
+import {
+  VintageCornerTL,
+  VintageCornerTR,
+  VintageCornerBL,
+  VintageCornerBR,
+} from './emblems/VintageCorners';
+import { MilitarySignatureGraphic } from './emblems/SignatureGraphic';
 import { QrCodeRenderer } from './QrCodeRenderer';
 import { formatVerificationUrl } from '../utils/codeGenerator';
-import { interpolateCertificateText } from '../utils/storage';
-import { Award, ShieldCheck } from 'lucide-react';
+import { DEFAULT_CVTE_SYLLABUS } from '../utils/storage';
 
 interface CertificateDocumentProps {
   certificate: Partial<Certificate> & {
@@ -15,45 +24,57 @@ interface CertificateDocumentProps {
   };
   elementId?: string;
   isCancelled?: boolean;
-  scale?: number;
+  page?: 'front' | 'back';
 }
 
-export const CertificateDocument: React.FC<CertificateDocumentProps> = ({
+/**
+ * Render the Front Page (Página 1: Frente)
+ */
+export const CertificateFrontPage: React.FC<CertificateDocumentProps> = ({
   certificate,
-  elementId = 'certificate-document-canvas',
+  elementId = 'certificate-front-canvas',
   isCancelled = false,
 }) => {
   const {
-    code = 'CERT-2026-000001',
-    studentName = 'Nome do Aluno',
-    studentDocument,
-    courseName = 'Nome do Curso',
-    workloadHours = 40,
-    modality = 'online',
-    instructorName = 'Prof. Instrutor',
-    institutionName = 'Tech Academy Brasil',
-    institutionLogoUrl,
-    issueDate = new Date().toISOString().split('T')[0],
-    startDate = '2026-01-10',
-    endDate = '2026-02-15',
-    location = 'São Paulo, SP',
-    signatoryName = 'Dra. Maria Souza',
-    signatoryRole = 'Diretora Acadêmica & Coordenadora de Ensino',
+    code = '006/CVTE/2026',
+    studentName = 'CARLOS HENRIQUE CAETANO DA SILVA',
+    studentDocument = '067.440.731-84',
+    registrationNumber = '07575025319',
+    cnhCategory = 'AD',
+    courseName = 'Curso Especializado para Condutores de Veículos de Transporte de Emergência',
+    courseSubhead = 'Condutores de Veículos de\nTransporte de Emergência',
+    workloadHours = 50,
+    startDate = '2026-06-08',
+    endDate = '2026-06-16',
+    issueDate = '2026-06-18',
+    location = 'Brasília-DF',
+    legalInstruction = 'Instrução Nº 592, de 10 de agosto de 2020/Detran-DF',
+    contranResolution = 'Resolução Nº 1.020/2025 do CONTRAN',
+    validityText = 'com validade de cinco anos após o término do curso',
+    institutionCnpj = '21.744.847/0001-50',
+    signatoryName = 'Carlos Henrique Ferreira De Mello',
+    signatoryRole = 'Diretor Geral',
+    signatoryCpf = '981.050.007-68',
     signatureImageUrl,
-    secondSignatoryName = 'Prof. Carlos Eduardo Silveira',
-    secondSignatoryRole = 'Coordenador do Conselho Pedagógico',
-    secondSignatureImageUrl,
     customText,
-    observations,
-    integrityHash = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
   } = certificate;
 
-  const verificationUrl = formatVerificationUrl(code);
-
-  // Format date to Brazilian long format: "26 de agosto de 2026"
-  const formattedIssueDate = (() => {
+  // Format dates
+  const formatDateBR = (isoDate?: string) => {
+    if (!isoDate) return '';
     try {
-      const parts = issueDate.split('-');
+      const parts = isoDate.split('-');
+      if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+      return isoDate;
+    } catch {
+      return isoDate;
+    }
+  };
+
+  const formatDateExtensoBR = (isoDate?: string) => {
+    if (!isoDate) return '18 de junho de 2026';
+    try {
+      const parts = isoDate.split('-');
       if (parts.length === 3) {
         const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
         return d.toLocaleDateString('pt-BR', {
@@ -62,47 +83,26 @@ export const CertificateDocument: React.FC<CertificateDocumentProps> = ({
           year: 'numeric',
         });
       }
-      return issueDate;
+      return isoDate;
     } catch {
-      return issueDate;
+      return isoDate;
     }
-  })();
-
-  // Resolve body text by interpolating placeholders if needed
-  const bodyText = customText
-    ? interpolateCertificateText(customText, {
-        studentName,
-        courseName,
-        workloadHours,
-        startDate,
-        endDate,
-        issueDate,
-        instructorName,
-        institutionName,
-        location,
-        studentDocument,
-      })
-    : `Certificamos que ${studentName} concluiu com êxito o curso ${courseName}, com carga horária de ${workloadHours} horas na modalidade ${
-        modality === 'online' ? 'Online' : modality === 'presencial' ? 'Presencial' : 'Híbrida'
-      }, realizado no período de ${startDate.split('-').reverse().join('/')} a ${endDate
-        .split('-')
-        .reverse()
-        .join('/')}.`;
-
-  // Dynamic font sizing for long student names to prevent ugly line breaks
-  const getStudentNameFontSize = (name: string) => {
-    if (name.length > 40) return 'text-2xl sm:text-3xl';
-    if (name.length > 28) return 'text-3xl sm:text-4xl';
-    return 'text-4xl sm:text-5xl';
   };
+
+  const startFormatted = formatDateBR(startDate) || '08/06/2026';
+  const endFormatted = formatDateBR(endDate) || '16/06/2026';
+  const formattedIssueDate = formatDateExtensoBR(issueDate);
+
+  // Subhead split into 2 lines
+  const subheadLines = (courseSubhead || 'Condutores de Veículos de\nTransporte de Emergência').split('\n');
 
   return (
     <div
       id={elementId}
-      className="certificate-container relative bg-[#FCFBF7] select-none text-slate-900 overflow-hidden shadow-2xl font-serif"
+      className="certificate-container relative bg-[#FAF9F5] select-none text-slate-900 overflow-hidden shadow-2xl font-serif"
       style={{
         width: '1050px',
-        height: '742px', // Proportional to A4 Landscape (297 / 210 = 1.414 ratio)
+        height: '742px', // Exact A4 Landscape (1:1.414 ratio)
         minWidth: '1050px',
         minHeight: '742px',
         maxWidth: '1050px',
@@ -110,7 +110,7 @@ export const CertificateDocument: React.FC<CertificateDocumentProps> = ({
         boxSizing: 'border-box',
       }}
     >
-      {/* Cancellation Watermark overlay */}
+      {/* Cancellation Watermark */}
       {isCancelled && (
         <div className="absolute inset-0 z-50 bg-rose-950/20 backdrop-blur-[1px] flex items-center justify-center pointer-events-none">
           <div className="transform -rotate-12 border-8 border-rose-700 bg-rose-50/95 px-16 py-6 rounded-3xl shadow-2xl flex flex-col items-center">
@@ -118,186 +118,341 @@ export const CertificateDocument: React.FC<CertificateDocumentProps> = ({
               CANCELADO / REVOGADO
             </span>
             <span className="text-sm font-bold text-rose-900 tracking-wider mt-2 font-sans">
-              Documento formalmente invalidado no sistema de registro e autenticidade
+              Documento formalmente invalidado no registro oficial
             </span>
           </div>
         </div>
       )}
 
-      {/* Official Security Border Frame */}
-      <div className="w-full h-full p-8 flex flex-col justify-between relative border-[12px] border-[#0F172A] box-border">
-        {/* Inner Gold Guilloché Security Border */}
-        <div className="absolute inset-2.5 border-[2px] border-[#D97706] pointer-events-none" />
-        <div className="absolute inset-3.5 border-[1px] border-[#B45309]/50 pointer-events-none" />
+      {/* Ornate Framing Borders */}
+      <div className="w-full h-full p-7 flex flex-col justify-between relative box-border">
+        {/* Outer Heavy Border */}
+        <div className="absolute inset-4 border-[3.5px] border-[#111827] pointer-events-none" />
+        
+        {/* Inner Fine Margin Border */}
+        <div className="absolute inset-6 border-[1px] border-[#111827] pointer-events-none" />
 
-        {/* Security Corner Ornaments (CSS Vector-drawn) */}
-        <div className="absolute top-4 left-4 w-7 h-7 border-t-2 border-l-2 border-[#D97706] pointer-events-none" />
-        <div className="absolute top-4 right-4 w-7 h-7 border-t-2 border-r-2 border-[#D97706] pointer-events-none" />
-        <div className="absolute bottom-4 left-4 w-7 h-7 border-b-2 border-l-2 border-[#D97706] pointer-events-none" />
-        <div className="absolute bottom-4 right-4 w-7 h-7 border-b-2 border-r-2 border-[#D97706] pointer-events-none" />
-
-        {/* Subtle Background Watermark Seal */}
-        <div className="absolute inset-0 flex items-center justify-center opacity-[0.035] pointer-events-none">
-          <Award className="w-[540px] h-[540px] text-[#0F172A]" />
+        {/* 4 Baroque Corner Flourishes */}
+        <div className="absolute top-3.5 left-3.5 pointer-events-none">
+          <VintageCornerTL size={74} color="#111827" />
+        </div>
+        <div className="absolute top-3.5 right-3.5 pointer-events-none">
+          <VintageCornerTR size={74} color="#111827" />
+        </div>
+        <div className="absolute bottom-3.5 left-3.5 pointer-events-none">
+          <VintageCornerBL size={74} color="#111827" />
+        </div>
+        <div className="absolute bottom-3.5 right-3.5 pointer-events-none">
+          <VintageCornerBR size={74} color="#111827" />
         </div>
 
-        {/* 1. TOP HEADER: Institution & Official Crest */}
-        <header className="relative z-10 text-center space-y-1 pt-1">
-          <div className="flex items-center justify-center gap-3">
-            {institutionLogoUrl ? (
-              <img
-                src={institutionLogoUrl}
-                alt={institutionName}
-                className="h-11 max-w-[200px] object-contain"
-                referrerPolicy="no-referrer"
-              />
-            ) : (
-              <div className="w-10 h-10 rounded-full bg-[#0F172A] flex items-center justify-center text-white shadow-xs">
-                <Award className="w-6 h-6 text-amber-400" />
-              </div>
-            )}
-            <span
-              className="text-xs font-bold tracking-[0.25em] uppercase text-slate-800 font-sans"
-            >
-              {institutionName}
-            </span>
+        {/* ============================================================ */}
+        {/* 1. TOP HEADER ROW: SGEx Crest | Title Block | BAdmQgex + Code */}
+        {/* ============================================================ */}
+        <div className="relative z-10 grid grid-cols-12 items-start pt-2 px-3">
+          {/* Left Crest: SGEx */}
+          <div className="col-span-2 flex justify-start pl-2 pt-1">
+            <SGExEmblem size={74} />
           </div>
 
-          <div className="pt-2">
+          {/* Center Title Block */}
+          <div className="col-span-8 flex flex-col items-center text-center">
+            {/* Top Filigree */}
+            <TopFiligree width={210} color="#111827" className="mb-0.5" />
+
+            {/* Title: CERTIFICADO with elegant warm gradient */}
             <h1
-              className="text-3xl sm:text-4xl font-extrabold tracking-[0.18em] uppercase text-[#0F172A]"
+              className="text-[44px] leading-none font-serif font-black tracking-[0.16em] uppercase text-transparent bg-clip-text bg-gradient-to-b from-[#C2410C] via-[#D97706] to-[#9A3412]"
+              style={{
+                textShadow: '0 1px 1px rgba(0,0,0,0.08)',
+                filter: 'drop-shadow(0 1px 1px rgba(217, 119, 6, 0.25))',
+              }}
             >
-              CERTIFICADO DE CONCLUSÃO
+              CERTIFICADO
             </h1>
-            <div className="flex items-center justify-center gap-3 mt-1.5">
-              <span className="h-[1px] w-20 bg-gradient-to-r from-transparent to-[#D97706]" />
-              <span className="text-[10px] uppercase font-bold tracking-[0.2em] text-[#B45309] font-sans">
-                DOCUMENTO OFICIAL REGISTRADO
+
+            {/* Subtitle */}
+            <div className="pt-1.5 pb-0.5 font-sans font-black text-slate-900 text-lg sm:text-[19px] leading-snug tracking-tight">
+              {subheadLines.map((line, idx) => (
+                <div key={idx}>{line}</div>
+              ))}
+            </div>
+
+            {/* Bottom Filigree Divider */}
+            <BottomFiligree width={310} color="#111827" className="mt-1" />
+          </div>
+
+          {/* Right Crest: B ADM QGEX + Certificate Code */}
+          <div className="col-span-2 flex flex-col items-end pr-2 pt-1">
+            <BAdmQgexEmblem size={74} />
+            <div className="pt-2 text-right">
+              <span className="font-sans font-black text-[16px] text-slate-900 tracking-wider">
+                {code}
               </span>
-              <span className="h-[1px] w-20 bg-gradient-to-l from-transparent to-[#D97706]" />
             </div>
           </div>
-        </header>
+        </div>
 
-        {/* 2. CENTRAL BODY: Certificate Attestation */}
-        <main className="relative z-10 text-center px-8 space-y-3.5 my-auto">
-          <p className="text-sm italic text-slate-600 font-serif">
-            Certificamos para os devidos fins que
-          </p>
-
-          {/* Student Name */}
-          <div className="space-y-1">
-            <h2
-              className={`font-black text-[#0F172A] tracking-wide leading-tight max-w-[860px] mx-auto transition-all ${getStudentNameFontSize(
-                studentName
-              )}`}
-            >
-              {studentName}
-            </h2>
-            {studentDocument && (
-              <p className="text-[11px] font-sans text-slate-500 font-medium">
-                Documento de Identificação: {studentDocument}
-              </p>
-            )}
-          </div>
-
-          {/* Main Statement */}
-          <p className="text-base text-slate-700 leading-relaxed max-w-[860px] mx-auto font-serif">
-            {bodyText}
-          </p>
-
-          {/* Optional Observations / Complementary Text */}
-          {observations && (
-            <p className="text-xs italic text-slate-500 max-w-[780px] mx-auto pt-0.5">
-              Nota complementar: {observations}
+        {/* ============================================================ */}
+        {/* 2. BODY CONTENT: Attestation Paragraph */}
+        {/* ============================================================ */}
+        <div className="relative z-10 px-8 my-auto pt-1 pb-2">
+          {customText ? (
+            <p className="text-[14.8px] leading-[1.8] text-slate-900 text-justify font-serif">
+              {customText}
+            </p>
+          ) : (
+            <p className="text-[14.8px] leading-[1.8] text-slate-900 text-justify font-serif">
+              A Instituição de Ensino de Trânsito da Base Administrativa do Quartel-General do Exército – Forte Caxias – ({legalInstruction}) certifica que{' '}
+              <strong className="font-extrabold text-slate-950 uppercase">{studentName}</strong>, inscrito no CPF nº{' '}
+              <strong className="font-bold text-slate-950">{studentDocument}</strong> e no Nº REGISTRO{' '}
+              <strong className="font-bold text-slate-950">{registrationNumber}</strong>, categoria{' '}
+              <strong className="font-bold text-slate-950">“{cnhCategory}”</strong>, concluiu com aproveitamento o{' '}
+              <strong className="font-extrabold text-slate-950">{courseName}</strong>, ministrado pela IET - Forte Caxias, no período de{' '}
+              <strong className="font-bold text-slate-950">{startFormatted} a {endFormatted}</strong>, com carga horária de{' '}
+              <strong className="font-bold text-slate-950">{workloadHours}h/a</strong>, {validityText}, conforme {contranResolution}.
             </p>
           )}
 
           {/* Location and Issue Date */}
-          <p className="text-xs text-slate-600 font-serif pt-1">
-            {location}, {formattedIssueDate}.
-          </p>
-        </main>
+          <div className="text-center pt-5">
+            <p className="font-serif font-bold text-[14.5px] text-slate-900">
+              {location}, {formattedIssueDate}
+            </p>
+          </div>
+        </div>
 
-        {/* 3. FOOTER: Signatures & Cryptographic QR Verification */}
-        <footer className="relative z-10 border-t border-slate-200/80 pt-4 pb-1">
-          <div className="grid grid-cols-12 items-end gap-4">
-            {/* Left Column: Official Signatures */}
-            <div className="col-span-8 flex items-end justify-start gap-8 pl-4">
-              {/* Primary Signature */}
-              <div className="text-center min-w-[200px] max-w-[240px]">
-                <div className="h-11 flex items-center justify-center mb-1">
-                  {signatureImageUrl ? (
-                    <img
-                      src={signatureImageUrl}
-                      alt={signatoryName}
-                      className="max-h-11 max-w-[170px] object-contain"
-                      referrerPolicy="no-referrer"
-                    />
-                  ) : (
-                    <div className="font-serif italic text-base text-slate-800 tracking-wider font-semibold border-b border-dashed border-slate-300 pb-0.5 px-4">
-                      {signatoryName}
-                    </div>
-                  )}
-                </div>
-                <div className="border-t border-slate-800 pt-1">
-                  <p className="text-xs font-bold text-slate-900 truncate">{signatoryName}</p>
-                  <p className="text-[10px] text-slate-500 font-sans truncate">{signatoryRole}</p>
-                </div>
-              </div>
-
-              {/* Second Signature (if configured or enabled) */}
-              {secondSignatoryName && (
-                <div className="text-center min-w-[200px] max-w-[240px]">
-                  <div className="h-11 flex items-center justify-center mb-1">
-                    {secondSignatureImageUrl ? (
-                      <img
-                        src={secondSignatureImageUrl}
-                        alt={secondSignatoryName}
-                        className="max-h-11 max-w-[170px] object-contain"
-                        referrerPolicy="no-referrer"
-                      />
-                    ) : (
-                      <div className="font-serif italic text-base text-slate-800 tracking-wider font-semibold border-b border-dashed border-slate-300 pb-0.5 px-4">
-                        {secondSignatoryName}
-                      </div>
-                    )}
-                  </div>
-                  <div className="border-t border-slate-800 pt-1">
-                    <p className="text-xs font-bold text-slate-900 truncate">{secondSignatoryName}</p>
-                    <p className="text-[10px] text-slate-500 font-sans truncate">{secondSignatoryRole}</p>
-                  </div>
-                </div>
+        {/* ============================================================ */}
+        {/* 3. FOOTER: Signature (Left) & CNPJ / Institution (Right) */}
+        {/* ============================================================ */}
+        <div className="relative z-10 px-8 pb-3 grid grid-cols-12 items-end">
+          {/* Bottom Left: Official Signature */}
+          <div className="col-span-6 flex flex-col items-start pl-2">
+            <div className="h-14 flex items-center justify-start mb-0.5">
+              {signatureImageUrl ? (
+                <img
+                  src={signatureImageUrl}
+                  alt={signatoryName}
+                  className="max-h-14 max-w-[190px] object-contain"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <MilitarySignatureGraphic width={175} />
               )}
             </div>
-
-            {/* Right Column: Authenticity QR Code & Public Validation Box */}
-            <div className="col-span-4 flex items-center justify-end gap-3 pr-2">
-              <div className="text-right space-y-0.5 font-sans">
-                <div className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded">
-                  <ShieldCheck className="w-3 h-3 text-emerald-600 shrink-0" />
-                  <span>AUTENTICIDADE VERIFICÁVEL</span>
-                </div>
-                <p className="text-[10px] font-bold text-slate-800 tracking-wider font-mono">
-                  {code}
-                </p>
-                <p className="text-[9px] text-slate-400 font-mono truncate max-w-[150px]" title={integrityHash}>
-                  SHA256: {integrityHash.slice(0, 12)}...
-                </p>
-              </div>
-
-              {/* QR Code Container */}
-              <div className="p-1.5 bg-white rounded-lg border border-slate-200 shadow-xs shrink-0">
-                <QrCodeRenderer
-                  value={verificationUrl}
-                  size={58}
-                  className="rounded-xs"
-                />
-              </div>
+            <div className="text-left font-sans">
+              <p className="text-[12px] font-bold text-slate-950 leading-tight">
+                {signatoryName}
+              </p>
+              <p className="text-[11px] text-slate-800 leading-tight">
+                {signatoryRole}
+              </p>
+              <p className="text-[11px] text-slate-800 leading-tight">
+                {signatoryCpf}
+              </p>
             </div>
           </div>
-        </footer>
+
+          {/* Bottom Right: CNPJ & Military Institution Name */}
+          <div className="col-span-6 flex flex-col items-end pr-2 text-right font-sans">
+            <p className="text-[11.5px] font-bold text-slate-950 tracking-wide">
+              CNPJ Nº {institutionCnpj}
+            </p>
+            <p className="text-[10px] font-bold text-slate-950 uppercase tracking-wider pt-0.5">
+              BASE ADMINISTRATIVA DO QUARTEL-GENERAL DO EXÉRCITO
+            </p>
+          </div>
+        </div>
       </div>
     </div>
+  );
+};
+
+/**
+ * Render the Back Page (Página 2: Verso - Conteúdo Programático)
+ */
+export const CertificateBackPage: React.FC<CertificateDocumentProps> = ({
+  certificate,
+  elementId = 'certificate-back-canvas',
+  isCancelled = false,
+}) => {
+  const {
+    code = '006/CVTE/2026',
+    syllabus = DEFAULT_CVTE_SYLLABUS,
+  } = certificate;
+
+  const activeSyllabus: SyllabusItem[] = syllabus && syllabus.length > 0 ? syllabus : DEFAULT_CVTE_SYLLABUS;
+
+  return (
+    <div
+      id={elementId}
+      className="certificate-container relative bg-[#FAF9F5] select-none text-slate-900 overflow-hidden shadow-2xl font-serif"
+      style={{
+        width: '1050px',
+        height: '742px',
+        minWidth: '1050px',
+        minHeight: '742px',
+        maxWidth: '1050px',
+        maxHeight: '742px',
+        boxSizing: 'border-box',
+      }}
+    >
+      {/* Cancellation Watermark */}
+      {isCancelled && (
+        <div className="absolute inset-0 z-50 bg-rose-950/20 backdrop-blur-[1px] flex items-center justify-center pointer-events-none">
+          <div className="transform -rotate-12 border-8 border-rose-700 bg-rose-50/95 px-16 py-6 rounded-3xl shadow-2xl flex flex-col items-center">
+            <span className="text-5xl font-black text-rose-700 tracking-widest uppercase font-sans">
+              CANCELADO / REVOGADO
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Ornate Framing Borders */}
+      <div className="w-full h-full p-7 flex flex-col justify-between relative box-border">
+        {/* Outer Heavy Border */}
+        <div className="absolute inset-4 border-[3.5px] border-[#111827] pointer-events-none" />
+        
+        {/* Inner Fine Margin Border */}
+        <div className="absolute inset-6 border-[1px] border-[#111827] pointer-events-none" />
+
+        {/* 4 Baroque Corner Flourishes */}
+        <div className="absolute top-3.5 left-3.5 pointer-events-none">
+          <VintageCornerTL size={74} color="#111827" />
+        </div>
+        <div className="absolute top-3.5 right-3.5 pointer-events-none">
+          <VintageCornerTR size={74} color="#111827" />
+        </div>
+        <div className="absolute bottom-3.5 left-3.5 pointer-events-none">
+          <VintageCornerBL size={74} color="#111827" />
+        </div>
+        <div className="absolute bottom-3.5 right-3.5 pointer-events-none">
+          <VintageCornerBR size={74} color="#111827" />
+        </div>
+
+        {/* ============================================================ */}
+        {/* 1. VERSO HEADER: SGEx Crest | Institution Big Headline | B ADM QGEX */}
+        {/* ============================================================ */}
+        <div className="relative z-10 grid grid-cols-12 items-center pt-2 px-3">
+          {/* Left Crest: SGEx */}
+          <div className="col-span-2 flex justify-start pl-2">
+            <SGExEmblem size={68} />
+          </div>
+
+          {/* Center Institution Title */}
+          <div className="col-span-8 flex flex-col items-center text-center font-sans">
+            <h2 className="text-[21px] font-black tracking-[0.04em] uppercase text-slate-950 leading-tight">
+              BASE ADMINISTRATIVA DO QUARTEL-GENERAL DO EXÉRCITO
+            </h2>
+            <h3 className="text-[21px] font-black tracking-[0.08em] uppercase text-slate-950 leading-tight mt-0.5">
+              “FORTE CAXIAS”
+            </h3>
+          </div>
+
+          {/* Right Crest: B ADM QGEX */}
+          <div className="col-span-2 flex justify-end pr-2">
+            <BAdmQgexEmblem size={68} />
+          </div>
+        </div>
+
+        {/* ============================================================ */}
+        {/* 2. SUBHEADER: CONTEÚDO PROGRAMÁTICO & CODE */}
+        {/* ============================================================ */}
+        <div className="relative z-10 px-8 pt-3 pb-1 grid grid-cols-12 items-center font-sans">
+          <div className="col-span-2" />
+          <div className="col-span-8 text-center">
+            <span className="font-black text-[15px] tracking-[0.14em] uppercase text-slate-950">
+              CONTEÚDO PROGRAMÁTICO
+            </span>
+          </div>
+          <div className="col-span-2 text-right">
+            <span className="font-black text-[15px] text-slate-950 tracking-wider">
+              {code}
+            </span>
+          </div>
+        </div>
+
+        {/* ============================================================ */}
+        {/* 3. SYLLABUS TABLE GRID */}
+        {/* ============================================================ */}
+        <div className="relative z-10 px-8 my-auto font-sans">
+          <table className="w-full border-collapse border-[2px] border-slate-950 bg-slate-50/70">
+            {/* Table Header */}
+            <thead>
+              <tr className="bg-[#E2E8F0] border-b-[2px] border-slate-950">
+                <th className="border-r-[2px] border-slate-950 py-3.5 px-4 text-center text-[12px] font-black text-slate-950 uppercase tracking-wider w-[28%]">
+                  DISCIPLINA
+                </th>
+                <th className="border-r-[2px] border-slate-950 py-3.5 px-4 text-center text-[12px] font-black text-slate-950 uppercase tracking-wider w-[22%]">
+                  CARGA HORÁRIA
+                </th>
+                <th className="border-r-[2px] border-slate-950 py-3.5 px-4 text-center text-[12px] font-black text-slate-950 uppercase tracking-wider w-[20%]">
+                  AVALIAÇÃO
+                </th>
+                <th className="py-3.5 px-4 text-center text-[12px] font-black text-slate-950 uppercase tracking-wider w-[30%]">
+                  INSTRUTOR
+                </th>
+              </tr>
+            </thead>
+
+            {/* Table Rows */}
+            <tbody className="divide-y-[1.5px] divide-slate-950 text-slate-950">
+              {activeSyllabus.map((row, idx) => (
+                <tr
+                  key={idx}
+                  className={`border-b-[1.5px] border-slate-950 ${
+                    idx % 2 === 0 ? 'bg-[#F1F5F9]/70' : 'bg-[#E2E8F0]/40'
+                  }`}
+                >
+                  <td className="border-r-[2px] border-slate-950 py-3.5 px-4 text-center font-bold text-[12.5px] leading-snug">
+                    {row.discipline}
+                  </td>
+                  <td className="border-r-[2px] border-slate-950 py-3.5 px-4 text-center font-bold text-[13px]">
+                    {row.workload}
+                  </td>
+                  <td className="border-r-[2px] border-slate-950 py-3.5 px-4 text-center font-black text-[13px]">
+                    {row.grade}
+                  </td>
+                  <td className="py-3.5 px-4 text-center font-bold text-[12px] uppercase">
+                    {row.instructor}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Verso Bottom Margin spacing */}
+        <div className="relative z-10 pb-4" />
+      </div>
+    </div>
+  );
+};
+
+/**
+ * Unified Certificate Document Component with Front / Back Support
+ */
+export const CertificateDocument: React.FC<CertificateDocumentProps> = ({
+  certificate,
+  elementId = 'certificate-document-canvas',
+  isCancelled = false,
+  page = 'front',
+}) => {
+  if (page === 'back') {
+    return (
+      <CertificateBackPage
+        certificate={certificate}
+        elementId={elementId}
+        isCancelled={isCancelled}
+      />
+    );
+  }
+
+  return (
+    <CertificateFrontPage
+      certificate={certificate}
+      elementId={elementId}
+      isCancelled={isCancelled}
+    />
   );
 };

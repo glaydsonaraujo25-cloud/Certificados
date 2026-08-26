@@ -128,7 +128,7 @@ export const BatchEmissionView: React.FC = () => {
           const workloadHours = parseInt(cols[4], 10) || 40;
           const startDate = cols[5] || '2026-01-10';
           const endDate = cols[6] || '2026-02-15';
-          const instructorName = cols[7] || institution.signatureName || 'Prof. Instrutor';
+          const instructorName = cols[7] || institution.signatoryName || 'Prof. Instrutor';
 
           const val = validateRow({ studentName, courseName, workloadHours });
           rows.push({
@@ -184,7 +184,7 @@ export const BatchEmissionView: React.FC = () => {
       workloadHours: courses[0]?.workloadHours || 40,
       startDate: '2026-01-10',
       endDate: '2026-02-15',
-      instructorName: courses[0]?.instructorName || institution.signatureName || '',
+      instructorName: courses[0]?.instructorName || institution.signatoryName || '',
       status: 'invalid',
       errorMsg: 'Preencha o nome do aluno',
     };
@@ -239,8 +239,8 @@ export const BatchEmissionView: React.FC = () => {
           startDate: row.startDate,
           endDate: row.endDate,
           location: `${institution.city || 'São Paulo'}, ${institution.state || 'SP'}`,
-          signatoryName: institution.signatureName || 'Dra. Maria Souza',
-          signatoryRole: institution.signatureRole || 'Diretora Acadêmica',
+          signatoryName: institution.signatoryName || 'Dra. Maria Souza',
+          signatoryRole: institution.signatoryRole || 'Diretora Acadêmica',
           signatureImageUrl: institution.signatureImageUrl,
           secondSignatoryName: institution.showSecondSignature ? institution.secondSignatureName : undefined,
           secondSignatoryRole: institution.showSecondSignature ? institution.secondSignatureRole : undefined,

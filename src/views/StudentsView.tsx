@@ -38,6 +38,8 @@ export const StudentsView: React.FC = () => {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [documentNumber, setDocumentNumber] = useState('');
+  const [registrationNumber, setRegistrationNumber] = useState('');
+  const [cnhCategory, setCnhCategory] = useState('');
   const [courseId, setCourseId] = useState('');
   const [completionDate, setCompletionDate] = useState('');
   const [notes, setNotes] = useState('');
@@ -46,7 +48,8 @@ export const StudentsView: React.FC = () => {
     const matchSearch =
       s.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       s.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (s.documentNumber && s.documentNumber.includes(searchTerm));
+      (s.documentNumber && s.documentNumber.includes(searchTerm)) ||
+      (s.registrationNumber && s.registrationNumber.includes(searchTerm));
     const matchCourse = courseFilter ? s.courseId === courseFilter : true;
     return matchSearch && matchCourse;
   });
@@ -56,6 +59,8 @@ export const StudentsView: React.FC = () => {
     setFullName('');
     setEmail('');
     setDocumentNumber('');
+    setRegistrationNumber('');
+    setCnhCategory('AD');
     setCourseId(courses[0]?.id || '');
     setCompletionDate(new Date().toISOString().split('T')[0]);
     setNotes('');
@@ -67,6 +72,8 @@ export const StudentsView: React.FC = () => {
     setFullName(student.fullName);
     setEmail(student.email);
     setDocumentNumber(student.documentNumber || '');
+    setRegistrationNumber(student.registrationNumber || '');
+    setCnhCategory(student.cnhCategory || 'AD');
     setCourseId(student.courseId || '');
     setCompletionDate(student.completionDate || '');
     setNotes(student.notes || '');
@@ -82,18 +89,22 @@ export const StudentsView: React.FC = () => {
 
     if (editingStudent) {
       updateStudent(editingStudent.id, {
-        fullName,
+        fullName: fullName.toUpperCase(),
         email,
         documentNumber,
+        registrationNumber,
+        cnhCategory: cnhCategory.toUpperCase(),
         courseId,
         completionDate,
         notes,
       });
     } else {
       addStudent({
-        fullName,
+        fullName: fullName.toUpperCase(),
         email,
         documentNumber,
+        registrationNumber,
+        cnhCategory: cnhCategory.toUpperCase(),
         courseId,
         completionDate,
         notes,
@@ -167,9 +178,9 @@ export const StudentsView: React.FC = () => {
             <thead className="bg-slate-50 dark:bg-slate-800/70 text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider text-[10px] border-b border-slate-100 dark:border-slate-800">
               <tr>
                 <th className="px-4 py-3.5">Nome do Aluno</th>
-                <th className="px-4 py-3.5">E-mail</th>
-                <th className="px-4 py-3.5">Documento (CPF/RG)</th>
-                <th className="px-4 py-3.5">Curso Matriculado</th>
+                <th className="px-4 py-3.5">CPF</th>
+                <th className="px-4 py-3.5">Nº Registro / CNH</th>
+                <th className="px-4 py-3.5">Curso Vinculado</th>
                 <th className="px-4 py-3.5">Certificados</th>
                 <th className="px-4 py-3.5 text-right">Ações</th>
               </tr>
@@ -195,19 +206,23 @@ export const StudentsView: React.FC = () => {
                     >
                       <td className="px-4 py-3.5 font-semibold text-slate-900 dark:text-white">
                         <div className="flex items-center gap-2.5">
-                          <div className="w-7 h-7 rounded-full bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 font-bold text-xs flex items-center justify-center">
+                          <div className="w-7 h-7 rounded-full bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-400 font-bold text-xs flex items-center justify-center">
                             {student.fullName[0]}
                           </div>
-                          <span>{student.fullName}</span>
+                          <div>
+                            <div className="font-bold">{student.fullName}</div>
+                            <div className="text-[11px] text-slate-400">{student.email}</div>
+                          </div>
                         </div>
                       </td>
 
-                      <td className="px-4 py-3.5 text-slate-600 dark:text-slate-300">
-                        {student.email}
+                      <td className="px-4 py-3.5 text-slate-600 dark:text-slate-300 font-mono text-[11px]">
+                        {student.documentNumber || '-'}
                       </td>
 
-                      <td className="px-4 py-3.5 text-slate-500 font-mono text-[11px]">
-                        {student.documentNumber || '-'}
+                      <td className="px-4 py-3.5 text-slate-600 dark:text-slate-300 font-mono text-[11px]">
+                        <div>Reg: {student.registrationNumber || '-'}</div>
+                        <div className="text-[10px] text-amber-600 dark:text-amber-400 font-bold">Cat: {student.cnhCategory || '-'}</div>
                       </td>
 
                       <td className="px-4 py-3.5 text-slate-600 dark:text-slate-300 max-w-[180px] truncate">
@@ -233,14 +248,14 @@ export const StudentsView: React.FC = () => {
                             onClick={() => {
                               setCurrentView('create-certificate');
                             }}
-                            className="px-2 py-1 text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 rounded-lg hover:bg-indigo-100 transition-colors"
+                            className="px-2 py-1 text-[11px] font-semibold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 rounded-lg hover:bg-amber-100 transition-colors"
                             title="Emitir certificado para este aluno"
                           >
                             Emitir
                           </button>
                           <button
                             onClick={() => handleOpenEditModal(student)}
-                            className="p-1.5 text-slate-500 hover:text-indigo-600 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
+                            className="p-1.5 text-slate-500 hover:text-amber-600 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
                             title="Editar Aluno"
                           >
                             <Edit2 className="w-3.5 h-3.5" />
@@ -311,7 +326,7 @@ export const StudentsView: React.FC = () => {
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    Documento (CPF / RG)
+                    CPF *
                   </label>
                   <input
                     type="text"
@@ -319,6 +334,34 @@ export const StudentsView: React.FC = () => {
                     value={documentNumber}
                     onChange={(e) => setDocumentNumber(e.target.value)}
                     className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Nº de Registro da CNH
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Ex: 07575025319"
+                    value={registrationNumber}
+                    onChange={(e) => setRegistrationNumber(e.target.value)}
+                    className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-mono"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Categoria da CNH
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Ex: AD, B, D, E"
+                    value={cnhCategory}
+                    onChange={(e) => setCnhCategory(e.target.value.toUpperCase())}
+                    className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 uppercase font-bold"
                   />
                 </div>
               </div>

@@ -43,36 +43,37 @@ export const SettingsView: React.FC = () => {
 
   // Institution Form
   const [name, setName] = useState(institution.name);
+  const [institutionCnpj, setInstitutionCnpj] = useState(institution.institutionCnpj || '21.744.847/0001-50');
   const [email, setEmail] = useState(institution.email || '');
   const [phone, setPhone] = useState(institution.phone || '');
   const [website, setWebsite] = useState(institution.website || '');
-  const [city, setCity] = useState(institution.city || '');
-  const [state, setState] = useState(institution.state || '');
+  const [city, setCity] = useState(institution.city || 'Brasília');
+  const [state, setState] = useState(institution.state || 'DF');
 
   // Official Model Settings
   const [logoUrl, setLogoUrl] = useState(institution.logoUrl || '');
-  const [signatureName, setSignatureName] = useState(institution.signatureName || '');
-  const [signatureRole, setSignatureRole] = useState(institution.signatureRole || '');
+  const [signatoryName, setSignatoryName] = useState(institution.signatoryName || 'Carlos Henrique Ferreira De Mello');
+  const [signatoryRole, setSignatoryRole] = useState(institution.signatoryRole || 'Diretor Geral');
+  const [signatoryCpf, setSignatoryCpf] = useState(institution.signatoryCpf || '981.050.007-68');
   const [signatureImageUrl, setSignatureImageUrl] = useState(institution.signatureImageUrl || '');
 
-  const [showSecondSignature, setShowSecondSignature] = useState(institution.showSecondSignature ?? true);
-  const [secondSignatureName, setSecondSignatureName] = useState(
-    institution.secondSignatureName || 'Prof. Carlos Eduardo Silveira'
+  const [legalInstruction, setLegalInstruction] = useState(
+    institution.legalInstruction || 'Instrução Nº 592, de 10 de agosto de 2020/Detran-DF'
   );
-  const [secondSignatureRole, setSecondSignatureRole] = useState(
-    institution.secondSignatureRole || 'Coordenador do Conselho Pedagógico'
+  const [contranResolution, setContranResolution] = useState(
+    institution.contranResolution || 'Resolução Nº 1.020/2025 do CONTRAN'
   );
-  const [secondSignatureImageUrl, setSecondSignatureImageUrl] = useState(
-    institution.secondSignatureImageUrl || ''
+  const [validityText, setValidityText] = useState(
+    institution.validityText || 'com validade de cinco anos após o término do curso'
   );
 
-  const [codeFormat, setCodeFormat] = useState<'sequential' | 'alphanumeric'>(
-    institution.codeFormat || 'sequential'
+  const [codeFormat, setCodeFormat] = useState<'sequential' | 'alphanumeric' | 'cvte'>(
+    institution.codeFormat || 'cvte'
   );
-  const [sealText, setSealText] = useState(institution.sealText || 'DOCUMENTO AUTÊNTICO • EMISSÃO REGISTRADA');
+  const [sealText, setSealText] = useState(institution.sealText || 'DOCUMENTO AUTÊNTICO • IET FORTE CAXIAS');
   const [defaultCertificateText, setDefaultCertificateText] = useState(
     institution.defaultCertificateText ||
-      'Certificamos que [NOME DO ALUNO] concluiu com êxito o curso [NOME DO CURSO], com carga horária de [CARGA HORÁRIA] horas, realizado no período de [DATA INICIAL] a [DATA FINAL].'
+      'A Instituição de Ensino de Trânsito da Base Administrativa do Quartel-General do Exército – Forte Caxias – ([INSTRUÇÃO]) certifica que [NOME DO ALUNO], inscrito no CPF nº [CPF] e no Nº REGISTRO [Nº REGISTRO], categoria “[CATEGORIA]”, concluiu com aproveitamento o [NOME DO CURSO], ministrado pela IET - Forte Caxias, no período de [DATA INICIAL] a [DATA FINAL], com carga horária de [CARGA HORÁRIA]h/a, [VALIDADE], conforme [RESOLUÇÃO].'
   );
 
   const [savedSuccess, setSavedSuccess] = useState(false);
@@ -93,17 +94,13 @@ export const SettingsView: React.FC = () => {
   };
 
   // Handle Signature Upload (Base64 data URL)
-  const handleSignatureUpload = (e: React.ChangeEvent<HTMLInputElement>, isSecond = false) => {
+  const handleSignatureUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
       reader.onload = () => {
         if (typeof reader.result === 'string') {
-          if (isSecond) {
-            setSecondSignatureImageUrl(reader.result);
-          } else {
-            setSignatureImageUrl(reader.result);
-          }
+          setSignatureImageUrl(reader.result);
         }
       };
       reader.readAsDataURL(file);
@@ -124,19 +121,20 @@ export const SettingsView: React.FC = () => {
 
     updateInstitution({
       name,
+      institutionCnpj,
       logoUrl,
       email,
       phone,
       website,
       city,
       state,
-      signatureName,
-      signatureRole,
+      signatoryName,
+      signatoryRole,
+      signatoryCpf,
       signatureImageUrl,
-      secondSignatureName,
-      secondSignatureRole,
-      secondSignatureImageUrl,
-      showSecondSignature,
+      legalInstruction,
+      contranResolution,
+      validityText,
       codeFormat,
       sealText,
       defaultCertificateText,
@@ -343,36 +341,36 @@ export const SettingsView: React.FC = () => {
               </div>
             </div>
 
-            {/* 2. Assinaturas Oficiais */}
+            {/* 2. Assinatura Oficial do Diretor Geral */}
             <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-4">
               <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
-                <FileSignature className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                <FileSignature className="w-5 h-5 text-amber-600 dark:text-amber-400" />
                 <div>
                   <h2 className="font-bold text-base text-slate-900 dark:text-white">
-                    2. Assinaturas Oficiais do Documento
+                    2. Assinatura Oficial do Diretor Geral & Autenticação
                   </h2>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Defina os signatários responsáveis pela autenticação pedagógica.
+                    Defina os dados do signatário oficial responsável pela emissão dos certificados.
                   </p>
                 </div>
               </div>
 
               {/* Primary Signature */}
               <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 space-y-3">
-                <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">
-                  Assinatura Principal (Diretoria / Reitoria)
+                <span className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider">
+                  Diretor Geral / Responsável Oficial
                 </span>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <div>
                     <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                      Nome do Signatário
+                      Nome do Diretor Geral
                     </label>
                     <input
                       type="text"
                       disabled={!isAdmin}
-                      value={signatureName}
-                      onChange={(e) => setSignatureName(e.target.value)}
-                      className="w-full px-3 py-2 text-xs rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-indigo-500 focus:outline-hidden"
+                      value={signatoryName}
+                      onChange={(e) => setSignatoryName(e.target.value)}
+                      className="w-full px-3 py-2 text-xs rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-amber-500 focus:outline-hidden"
                     />
                   </div>
                   <div>
@@ -382,26 +380,38 @@ export const SettingsView: React.FC = () => {
                     <input
                       type="text"
                       disabled={!isAdmin}
-                      value={signatureRole}
-                      onChange={(e) => setSignatureRole(e.target.value)}
-                      className="w-full px-3 py-2 text-xs rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-indigo-500 focus:outline-hidden"
+                      value={signatoryRole}
+                      onChange={(e) => setSignatoryRole(e.target.value)}
+                      className="w-full px-3 py-2 text-xs rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-amber-500 focus:outline-hidden"
                     />
                   </div>
-                  <div className="md:col-span-2 flex flex-wrap items-center gap-3 pt-1">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                      CPF do Diretor
+                    </label>
+                    <input
+                      type="text"
+                      disabled={!isAdmin}
+                      value={signatoryCpf}
+                      onChange={(e) => setSignatoryCpf(e.target.value)}
+                      className="w-full px-3 py-2 text-xs rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-amber-500 focus:outline-hidden font-mono"
+                    />
+                  </div>
+                  <div className="md:col-span-3 flex flex-wrap items-center gap-3 pt-1">
                     <label className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-medium hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer">
                       <Upload className="w-3.5 h-3.5" />
-                      <span>Upload de Rubrica / Assinatura Digital</span>
+                      <span>Upload de Rubrica / Assinatura Digital Oficial</span>
                       <input
                         type="file"
                         accept="image/*"
                         disabled={!isAdmin}
-                        onChange={(e) => handleSignatureUpload(e, false)}
+                        onChange={handleSignatureUpload}
                         className="hidden"
                       />
                     </label>
                     {signatureImageUrl && (
                       <span className="text-xs text-emerald-600 font-semibold flex items-center gap-1">
-                        <CheckCircle className="w-3.5 h-3.5" /> Imagem de assinatura ativa
+                        <CheckCircle className="w-3.5 h-3.5" /> Imagem de assinatura digital ativa
                         <button
                           type="button"
                           onClick={() => setSignatureImageUrl('')}
@@ -414,88 +424,71 @@ export const SettingsView: React.FC = () => {
                   </div>
                 </div>
               </div>
+            </div>
 
-              {/* Second Signature */}
-              <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">
-                    Segunda Assinatura (Coordenação / Conselho)
-                  </span>
-                  <label className="flex items-center gap-2 text-xs font-medium text-slate-700 dark:text-slate-300 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      disabled={!isAdmin}
-                      checked={showSecondSignature}
-                      onChange={(e) => setShowSecondSignature(e.target.checked)}
-                      className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
-                    />
-                    <span>Exibir segunda assinatura no modelo</span>
+            {/* 3. Fundamentação Legal & Normativas Oficiais */}
+            <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-4">
+              <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
+                <Sliders className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                <div>
+                  <h2 className="font-bold text-base text-slate-900 dark:text-white">
+                    3. Fundamentação Legal Padrão & Diretrizes
+                  </h2>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Instrução normativa de homologação do Detran, Resolução CONTRAN e prazos de validade.
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                    Instrução Normativa de Credenciamento
                   </label>
+                  <input
+                    type="text"
+                    disabled={!isAdmin}
+                    value={legalInstruction}
+                    onChange={(e) => setLegalInstruction(e.target.value)}
+                    className="w-full px-3.5 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:outline-hidden disabled:opacity-60"
+                  />
                 </div>
 
-                {showSecondSignature && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                        Nome do 2º Signatário
-                      </label>
-                      <input
-                        type="text"
-                        disabled={!isAdmin}
-                        value={secondSignatureName}
-                        onChange={(e) => setSecondSignatureName(e.target.value)}
-                        className="w-full px-3 py-2 text-xs rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-indigo-500 focus:outline-hidden"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                        Cargo / Função
-                      </label>
-                      <input
-                        type="text"
-                        disabled={!isAdmin}
-                        value={secondSignatureRole}
-                        onChange={(e) => setSecondSignatureRole(e.target.value)}
-                        className="w-full px-3 py-2 text-xs rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-indigo-500 focus:outline-hidden"
-                      />
-                    </div>
-                    <div className="md:col-span-2 flex flex-wrap items-center gap-3 pt-1">
-                      <label className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-medium hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer">
-                        <Upload className="w-3.5 h-3.5" />
-                        <span>Upload de Imagem da 2ª Assinatura</span>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          disabled={!isAdmin}
-                          onChange={(e) => handleSignatureUpload(e, true)}
-                          className="hidden"
-                        />
-                      </label>
-                      {secondSignatureImageUrl && (
-                        <span className="text-xs text-emerald-600 font-semibold flex items-center gap-1">
-                          <CheckCircle className="w-3.5 h-3.5" /> 2ª Assinatura ativa
-                          <button
-                            type="button"
-                            onClick={() => setSecondSignatureImageUrl('')}
-                            className="ml-1 text-rose-500 hover:underline"
-                          >
-                            (Remover)
-                          </button>
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                )}
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                    Resolução do CONTRAN
+                  </label>
+                  <input
+                    type="text"
+                    disabled={!isAdmin}
+                    value={contranResolution}
+                    onChange={(e) => setContranResolution(e.target.value)}
+                    className="w-full px-3.5 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:outline-hidden disabled:opacity-60"
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                    Texto de Validade do Curso
+                  </label>
+                  <input
+                    type="text"
+                    disabled={!isAdmin}
+                    value={validityText}
+                    onChange={(e) => setValidityText(e.target.value)}
+                    className="w-full px-3.5 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:outline-hidden disabled:opacity-60"
+                  />
+                </div>
               </div>
             </div>
 
-            {/* 3. Texto Padrão com Variáveis */}
+            {/* 4. Texto Padrão do Certificado */}
             <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-4">
               <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
-                <Sliders className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                <Sliders className="w-5 h-5 text-amber-600 dark:text-amber-400" />
                 <div>
                   <h2 className="font-bold text-base text-slate-900 dark:text-white">
-                    3. Texto Padrão do Certificado & Variáveis
+                    4. Texto Padrão do Certificado & Variáveis
                   </h2>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
                     O texto de atestado que será renderizado automaticamente no corpo do documento.
@@ -512,7 +505,7 @@ export const SettingsView: React.FC = () => {
                   disabled={!isAdmin}
                   value={defaultCertificateText}
                   onChange={(e) => setDefaultCertificateText(e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 font-serif leading-relaxed focus:ring-2 focus:ring-indigo-500 focus:outline-hidden disabled:opacity-60"
+                  className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 font-serif leading-relaxed focus:ring-2 focus:ring-amber-500 focus:outline-hidden disabled:opacity-60"
                 />
               </div>
 
@@ -524,21 +517,24 @@ export const SettingsView: React.FC = () => {
                 <div className="flex flex-wrap gap-1.5">
                   {[
                     '[NOME DO ALUNO]',
+                    '[CPF]',
+                    '[Nº REGISTRO]',
+                    '[CATEGORIA]',
                     '[NOME DO CURSO]',
                     '[CARGA HORÁRIA]',
                     '[DATA INICIAL]',
                     '[DATA FINAL]',
-                    '[INSTRUTOR]',
-                    '[INSTITUIÇÃO]',
+                    '[INSTRUÇÃO]',
+                    '[RESOLUÇÃO]',
+                    '[VALIDADE]',
                     '[LOCAL]',
-                    '[DOCUMENTO]',
                   ].map((tag) => (
                     <button
                       key={tag}
                       type="button"
                       disabled={!isAdmin}
                       onClick={() => insertVariable(tag)}
-                      className="px-2.5 py-1 rounded-md bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 text-[11px] font-mono font-medium hover:bg-indigo-100 dark:hover:bg-indigo-900 transition-colors border border-indigo-200 dark:border-indigo-800/60 disabled:opacity-50"
+                      className="px-2.5 py-1 rounded-md bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 text-[11px] font-mono font-medium hover:bg-amber-100 dark:hover:bg-amber-900 transition-colors border border-amber-200 dark:border-amber-800/60 disabled:opacity-50"
                     >
                       {tag}
                     </button>
@@ -547,16 +543,16 @@ export const SettingsView: React.FC = () => {
               </div>
             </div>
 
-            {/* 4. Padrão do Código & Selo */}
+            {/* 5. Formato do Código Único */}
             <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-4">
               <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
-                <Shield className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                <Shield className="w-5 h-5 text-amber-600 dark:text-amber-400" />
                 <div>
                   <h2 className="font-bold text-base text-slate-900 dark:text-white">
-                    4. Formato do Código Único & Selo de Autenticidade
+                    5. Formato do Código Único Oficial
                   </h2>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Estrutura do código gerado para cada emissão e inscrição de segurança.
+                    Estrutura do código gerado para cada emissão.
                   </p>
                 </div>
               </div>
@@ -570,8 +566,9 @@ export const SettingsView: React.FC = () => {
                     disabled={!isAdmin}
                     value={codeFormat}
                     onChange={(e) => setCodeFormat(e.target.value as any)}
-                    className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:outline-hidden disabled:opacity-60 font-mono"
+                    className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:outline-hidden disabled:opacity-60 font-mono"
                   >
+                    <option value="cvte">Padrão Oficial Militar / CVTE (Ex: 006/CVTE/2026)</option>
                     <option value="sequential">Sequencial Oficial (Ex: CERT-2026-000001)</option>
                     <option value="alphanumeric">Alfanumérico Aleatório (Ex: CERT-2026-A8F42X)</option>
                   </select>
@@ -586,48 +583,52 @@ export const SettingsView: React.FC = () => {
                     disabled={!isAdmin}
                     value={sealText}
                     onChange={(e) => setSealText(e.target.value)}
-                    className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:outline-hidden disabled:opacity-60"
+                    className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:outline-hidden disabled:opacity-60"
                   />
                 </div>
               </div>
             </div>
 
-            {/* 5. Live Mini Preview */}
+            {/* 6. Live Mini Preview */}
             <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-4">
               <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
                 <div className="flex items-center gap-2">
-                  <Eye className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                  <Eye className="w-5 h-5 text-amber-600 dark:text-amber-400" />
                   <h2 className="font-bold text-base text-slate-900 dark:text-white">
-                    Pré-visualização do Modelo Oficial com Dados de Teste
+                    Pré-visualização do Modelo Oficial (Frente)
                   </h2>
                 </div>
                 <span className="text-xs font-semibold text-slate-500">A4 Paisagem (297x210mm)</span>
               </div>
 
               <div className="bg-slate-100 dark:bg-slate-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800 flex justify-center items-center overflow-x-auto">
-                <div className="transform scale-[0.68] sm:scale-[0.80] origin-center transition-transform">
+                <div className="transform scale-[0.65] sm:scale-[0.78] origin-top transition-transform shadow-xl rounded-lg overflow-hidden">
                   <CertificateDocument
                     certificate={{
-                      studentName: 'Nome do Aluno (Exemplo)',
-                      studentDocument: '123.456.789-00',
-                      courseName: 'Nome do Curso de Exemplo',
-                      workloadHours: 40,
-                      modality: 'online',
-                      instructorName: 'Prof. Instrutor',
+                      studentName: 'CARLOS HENRIQUE CAETANO DA SILVA',
+                      studentDocument: '067.440.731-84',
+                      registrationNumber: '07575025319',
+                      cnhCategory: 'AD',
+                      courseName: 'Curso Especializado para Condutores de Veículos de Transporte de Emergência',
+                      courseSubhead: 'Condutores de Veículos de\nTransporte de Emergência',
+                      workloadHours: 50,
+                      modality: 'presencial',
+                      instructorName: 'Paulo de Jesus Camargo / Erik Santiago',
                       institutionName: name,
+                      institutionCnpj: institutionCnpj,
                       institutionLogoUrl: logoUrl || undefined,
-                      issueDate: new Date().toISOString().split('T')[0],
-                      startDate: '2026-01-10',
-                      endDate: '2026-02-15',
-                      location: `${city || 'São Paulo'}, ${state || 'SP'}`,
-                      signatoryName: signatureName || 'Dra. Maria Souza',
-                      signatoryRole: signatureRole || 'Diretora Acadêmica',
+                      legalInstruction,
+                      contranResolution,
+                      validityText,
+                      issueDate: '2026-06-18',
+                      startDate: '2026-06-08',
+                      endDate: '2026-06-16',
+                      location: `${city || 'Brasília'}-${state || 'DF'}`,
+                      signatoryName: signatoryName || 'Carlos Henrique Ferreira De Mello',
+                      signatoryRole: signatoryRole || 'Diretor Geral',
+                      signatoryCpf: signatoryCpf || '981.050.007-68',
                       signatureImageUrl: signatureImageUrl || undefined,
-                      secondSignatoryName: showSecondSignature ? secondSignatureName : undefined,
-                      secondSignatoryRole: showSecondSignature ? secondSignatureRole : undefined,
-                      secondSignatureImageUrl: showSecondSignature ? secondSignatureImageUrl || undefined : undefined,
-                      customText: defaultCertificateText,
-                      code: 'CERT-2026-000001',
+                      code: '006/CVTE/2026',
                       templateId: 'official',
                     }}
                     elementId="official-model-settings-preview"
@@ -665,6 +666,20 @@ export const SettingsView: React.FC = () => {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 font-medium focus:ring-2 focus:ring-indigo-500 focus:outline-hidden disabled:opacity-60"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                  CNPJ da Instituição
+                </label>
+                <input
+                  type="text"
+                  disabled={!isAdmin}
+                  placeholder="Ex: 21.744.847/0001-50"
+                  value={institutionCnpj}
+                  onChange={(e) => setInstitutionCnpj(e.target.value)}
+                  className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:outline-hidden disabled:opacity-60 font-mono"
                 />
               </div>
 

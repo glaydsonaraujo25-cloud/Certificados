@@ -28,28 +28,61 @@ export const TEMPLATE_PRESETS: TemplatePreset[] = [
   },
 ];
 
+export const DEFAULT_CVTE_SYLLABUS = [
+  {
+    discipline: 'Legislação de Trânsito',
+    workload: '10h/a',
+    grade: '10',
+    instructor: 'PAULO DE JESUS CAMARGO',
+  },
+  {
+    discipline: 'Direção Defensiva',
+    workload: '15h/a',
+    grade: '9,0',
+    instructor: 'ERIK ANDRE RODRIGUES SANTIAGO',
+  },
+  {
+    discipline: 'Primeiros Socorros e Atendimento Inicial',
+    workload: '15h/a',
+    grade: '10',
+    instructor: 'FELIPE VILELA DA COSTA',
+  },
+  {
+    discipline: 'Comportamento e Convívio Social',
+    workload: '10h/a',
+    grade: '10',
+    instructor: 'ERIK ANDRE RODRIGUES SANTIAGO',
+  },
+];
+
 export const INITIAL_INSTITUTION: InstitutionSettings = {
-  name: 'Tech Academy Brasil',
+  name: 'Instituição de Ensino de Trânsito da Base Administrativa do Quartel-General do Exército – Forte Caxias',
+  institutionCnpj: '21.744.847/0001-50',
   logoUrl: '',
-  email: 'contato@techacademy.com.br',
-  phone: '(11) 98765-4321',
-  website: 'https://techacademy.com.br',
-  city: 'São Paulo',
-  state: 'SP',
-  signatureName: 'Dra. Maria Souza',
-  signatureRole: 'Diretora Acadêmica & Coordenadora de Ensino',
+  email: 'iet.badmqgex@eb.mil.br',
+  phone: '(61) 3415-4000',
+  website: 'https://www.eb.mil.br',
+  city: 'Brasília',
+  state: 'DF',
+  signatoryName: 'Carlos Henrique Ferreira De Mello',
+  signatoryRole: 'Diretor Geral',
+  signatoryCpf: '981.050.007-68',
   signatureImageUrl: '',
-  secondSignatureName: 'Prof. Carlos Eduardo Silveira',
-  secondSignatureRole: 'Coordenador do Conselho Pedagógico',
+  secondSignatureName: '',
+  secondSignatureRole: '',
   secondSignatureImageUrl: '',
-  showSecondSignature: true,
+  showSecondSignature: false,
   borderStyle: 'official-security',
-  codeFormat: 'sequential',
+  codeFormat: 'cvte',
   showQrCode: true,
   showSeal: true,
-  sealText: 'DOCUMENTO AUTÊNTICO • EMISSÃO REGISTRADA',
+  sealText: 'DOCUMENTO AUTÊNTICO • IET FORTE CAXIAS',
+  legalInstruction: 'Instrução Nº 592, de 10 de agosto de 2020/Detran-DF',
+  contranResolution: 'Resolução Nº 1.020/2025 do CONTRAN',
+  validityText: 'com validade de cinco anos após o término do curso',
+  showSyllabusOnVerso: true,
   defaultCertificateText:
-    'Certificamos que [NOME DO ALUNO] concluiu com êxito o curso [NOME DO CURSO], com carga horária de [CARGA HORÁRIA] horas, realizado no período de [DATA INICIAL] a [DATA FINAL].',
+    'A Instituição de Ensino de Trânsito da Base Administrativa do Quartel-General do Exército – Forte Caxias – ([INSTRUÇÃO]) certifica que [NOME DO ALUNO], inscrito no CPF nº [CPF] e no Nº REGISTRO [Nº REGISTRO], categoria “[CATEGORIA]”, concluiu com aproveitamento o [NOME DO CURSO], ministrado pela IET - Forte Caxias, no período de [DATA INICIAL] a [DATA FINAL], com carga horária de [CARGA HORÁRIA]h/a, [VALIDADE], conforme [RESOLUÇÃO].',
 };
 
 /**
@@ -60,19 +93,29 @@ export function interpolateCertificateText(
   vars: {
     studentName?: string;
     courseName?: string;
+    courseSubhead?: string;
     workloadHours?: number | string;
     startDate?: string;
     endDate?: string;
     issueDate?: string;
     instructorName?: string;
     institutionName?: string;
+    institutionCnpj?: string;
     location?: string;
     studentDocument?: string;
+    registrationNumber?: string;
+    cnhCategory?: string;
+    legalInstruction?: string;
+    contranResolution?: string;
+    validityText?: string;
+    signatoryName?: string;
+    signatoryRole?: string;
+    signatoryCpf?: string;
   } = {}
 ): string {
   let text =
     templateText ||
-    'Certificamos que [NOME DO ALUNO] concluiu com êxito o curso [NOME DO CURSO], com carga horária de [CARGA HORÁRIA] horas, realizado no período de [DATA INICIAL] a [DATA FINAL].';
+    'A Instituição de Ensino de Trânsito da Base Administrativa do Quartel-General do Exército – Forte Caxias – ([INSTRUÇÃO]) certifica que [NOME DO ALUNO], inscrito no CPF nº [CPF] e no Nº REGISTRO [Nº REGISTRO], categoria “[CATEGORIA]”, concluiu com aproveitamento o [NOME DO CURSO], ministrado pela IET - Forte Caxias, no período de [DATA INICIAL] a [DATA FINAL], com carga horária de [CARGA HORÁRIA]h/a, [VALIDADE], conforme [RESOLUÇÃO].';
 
   const formatDateBR = (isoDate?: string) => {
     if (!isoDate) return '';
@@ -87,231 +130,154 @@ export function interpolateCertificateText(
     }
   };
 
-  const startFormatted = formatDateBR(vars.startDate) || '01/01/2026';
-  const endFormatted = formatDateBR(vars.endDate) || '15/02/2026';
-  const issueFormatted = formatDateBR(vars.issueDate) || '16/02/2026';
+  const formatDateExtensoBR = (isoDate?: string) => {
+    if (!isoDate) return '';
+    try {
+      const parts = isoDate.split('-');
+      if (parts.length === 3) {
+        const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+        return d.toLocaleDateString('pt-BR', {
+          day: '2-digit',
+          month: 'long',
+          year: 'numeric',
+        });
+      }
+      return isoDate;
+    } catch {
+      return isoDate;
+    }
+  };
 
-  text = text.replace(/\[NOME DO ALUNO\]/gi, vars.studentName || 'Nome do Aluno');
-  text = text.replace(/\[NOME DO CURSO\]/gi, vars.courseName || 'Nome do Curso');
-  text = text.replace(/\[CARGA HORÁRIA\]/gi, String(vars.workloadHours || '40'));
+  const startFormatted = formatDateBR(vars.startDate) || '08/06/2026';
+  const endFormatted = formatDateBR(vars.endDate) || '16/06/2026';
+  const issueFormatted = formatDateExtensoBR(vars.issueDate) || '18 de junho de 2026';
+
+  text = text.replace(/\[NOME DO ALUNO\]/gi, vars.studentName || 'CARLOS HENRIQUE CAETANO DA SILVA');
+  text = text.replace(/\[NOME DO CURSO\]/gi, vars.courseName || 'Curso Especializado para Condutores de Veículos de Transporte de Emergência');
+  text = text.replace(/\[SUBTÍTULO DO CURSO\]/gi, vars.courseSubhead || 'Condutores de Veículos de Transporte de Emergência');
+  text = text.replace(/\[CARGA HORÁRIA\]/gi, String(vars.workloadHours || '50'));
   text = text.replace(/\[DATA INICIAL\]/gi, startFormatted);
   text = text.replace(/\[DATA FINAL\]/gi, endFormatted);
   text = text.replace(/\[DATA DE EMISSÃO\]/gi, issueFormatted);
   text = text.replace(/\[DATA DE CONCLUSÃO\]/gi, endFormatted);
   text = text.replace(/\[INSTRUTOR\]/gi, vars.instructorName || 'Prof. Instrutor');
-  text = text.replace(/\[INSTITUIÇÃO\]/gi, vars.institutionName || 'Tech Academy Brasil');
-  text = text.replace(/\[LOCAL\]/gi, vars.location || 'São Paulo, SP');
-  text = text.replace(/\[DOCUMENTO\]/gi, vars.studentDocument || '');
+  text = text.replace(/\[INSTITUIÇÃO\]/gi, vars.institutionName || 'Base Administrativa do Quartel-General do Exército – Forte Caxias');
+  text = text.replace(/\[LOCAL\]/gi, vars.location || 'Brasília-DF');
+  text = text.replace(/\[DOCUMENTO\]/gi, vars.studentDocument || '067.440.731-84');
+  text = text.replace(/\[CPF\]/gi, vars.studentDocument || '067.440.731-84');
+  text = text.replace(/\[Nº REGISTRO\]/gi, vars.registrationNumber || '07575025319');
+  text = text.replace(/\[REGISTRO\]/gi, vars.registrationNumber || '07575025319');
+  text = text.replace(/\[CATEGORIA\]/gi, vars.cnhCategory || 'AD');
+  text = text.replace(/\[INSTRUÇÃO\]/gi, vars.legalInstruction || 'Instrução Nº 592, de 10 de agosto de 2020/Detran-DF');
+  text = text.replace(/\[RESOLUÇÃO\]/gi, vars.contranResolution || 'Resolução Nº 1.020/2025 do CONTRAN');
+  text = text.replace(/\[CONTRAN\]/gi, vars.contranResolution || 'Resolução Nº 1.020/2025 do CONTRAN');
+  text = text.replace(/\[VALIDADE\]/gi, vars.validityText || 'com validade de cinco anos após o término do curso');
+  text = text.replace(/\[CNPJ\]/gi, vars.institutionCnpj || '21.744.847/0001-50');
+  text = text.replace(/\[DIRETOR\]/gi, vars.signatoryName || 'Carlos Henrique Ferreira De Mello');
+  text = text.replace(/\[SIGNATÁRIO\]/gi, vars.signatoryName || 'Carlos Henrique Ferreira De Mello');
+  text = text.replace(/\[CPF DIRETOR\]/gi, vars.signatoryCpf || '981.050.007-68');
 
   return text;
 }
 
 export const INITIAL_COURSES: Course[] = [
   {
-    id: 'course-1',
-    name: 'Introdução à Inteligência Artificial & LLMs',
-    description: 'Conceitos fundamentais de Inteligência Artificial Generativa, Engenharia de Prompt e arquitetura de Transformers.',
-    workloadHours: 40,
-    instructorName: 'Prof. Carlos Eduardo',
-    institutionName: 'Tech Academy Brasil',
-    startDate: '2026-01-10',
-    endDate: '2026-02-15',
-    modality: 'online',
-    createdAt: '2026-01-05T10:00:00Z',
-  },
-  {
-    id: 'course-2',
-    name: 'Desenvolvimento Web Full Stack Moderno',
-    description: 'Formação completa em TypeScript, React, Node.js, Express, APIs RESTful e boas práticas de arquitetura.',
-    workloadHours: 80,
-    instructorName: 'Mariana Duarte',
-    institutionName: 'Tech Academy Brasil',
-    startDate: '2026-01-05',
-    endDate: '2026-02-20',
-    modality: 'online',
-    createdAt: '2026-01-02T10:00:00Z',
-  },
-  {
-    id: 'course-3',
-    name: 'UI/UX Design & Design Systems',
-    description: 'Design de interfaces modernas, arquitetura de informação, prototipagem avançada no Figma e acessibilidade digital.',
-    workloadHours: 32,
-    instructorName: 'Rodrigo Lima',
-    institutionName: 'Tech Academy Brasil',
-    startDate: '2026-01-20',
-    endDate: '2026-02-18',
-    modality: 'hibrido',
-    createdAt: '2026-01-10T10:00:00Z',
-  },
-  {
-    id: 'course-4',
-    name: 'Gestão Ágil de Projetos & Scrum Master',
-    description: 'Liderança de equipes ágeis, cerimônias Scrum, métricas de produtividade e entrega contínua de valor.',
-    workloadHours: 24,
-    instructorName: 'Fernanda Barbosa',
-    institutionName: 'Tech Academy Brasil',
-    startDate: '2026-02-01',
-    endDate: '2026-02-14',
+    id: 'course-cvte',
+    name: 'Curso Especializado para Condutores de Veículos de Transporte de Emergência',
+    courseSubhead: 'Condutores de Veículos de Transporte de Emergência',
+    description: 'Curso de formação e capacitação profissional para condução de veículos de transporte de emergência, em conformidade com as diretrizes do CONTRAN e Detran-DF.',
+    workloadHours: 50,
+    instructorName: 'Cap. Paulo de Jesus / Ten. Erik Santiago',
+    institutionName: 'Base Administrativa do Quartel-General do Exército – Forte Caxias',
+    startDate: '2026-06-08',
+    endDate: '2026-06-16',
     modality: 'presencial',
-    createdAt: '2026-01-15T10:00:00Z',
+    legalInstruction: 'Instrução Nº 592, de 10 de agosto de 2020/Detran-DF',
+    contranResolution: 'Resolução Nº 1.020/2025 do CONTRAN',
+    syllabus: DEFAULT_CVTE_SYLLABUS,
+    createdAt: '2026-06-01T10:00:00Z',
+  },
+  {
+    id: 'course-1',
+    name: 'Curso Especializado de Transporte Coletivo de Passageiros',
+    courseSubhead: 'Transporte Coletivo de Passageiros',
+    description: 'Formação para condução profissional de passageiros e segurança no trânsito.',
+    workloadHours: 50,
+    instructorName: 'Paulo de Jesus Camargo',
+    institutionName: 'Base Administrativa do Quartel-General do Exército – Forte Caxias',
+    startDate: '2026-05-10',
+    endDate: '2026-05-20',
+    modality: 'presencial',
+    legalInstruction: 'Instrução Nº 592, de 10 de agosto de 2020/Detran-DF',
+    contranResolution: 'Resolução Nº 1.020/2025 do CONTRAN',
+    syllabus: DEFAULT_CVTE_SYLLABUS,
+    createdAt: '2026-05-01T10:00:00Z',
   },
 ];
 
 export const INITIAL_STUDENTS: Student[] = [
   {
-    id: 'student-1',
-    fullName: 'João da Silva',
-    email: 'joao.silva@email.com',
-    documentNumber: '123.456.789-00',
-    courseId: 'course-1',
-    completionDate: '2026-02-15',
-    notes: 'Excelente desempenho no projeto final prático.',
-    createdAt: '2026-01-10T14:00:00Z',
+    id: 'student-carlos',
+    fullName: 'CARLOS HENRIQUE CAETANO DA SILVA',
+    email: 'carlos.caetano@eb.mil.br',
+    documentNumber: '067.440.731-84',
+    registrationNumber: '07575025319',
+    cnhCategory: 'AD',
+    courseId: 'course-cvte',
+    completionDate: '2026-06-16',
+    notes: 'Aprovado com média 10 em todas as disciplinas práticas e teóricas.',
+    createdAt: '2026-06-05T14:00:00Z',
   },
   {
     id: 'student-2',
-    fullName: 'Ana Beatriz Mendes',
-    email: 'ana.mendes@email.com',
-    documentNumber: '234.567.890-11',
-    courseId: 'course-2',
-    completionDate: '2026-02-20',
-    notes: 'Conclusão com nota máxima.',
-    createdAt: '2026-01-12T15:00:00Z',
-  },
-  {
-    id: 'student-3',
-    fullName: 'Lucas Gabriel Oliveira',
-    email: 'lucas.oliveira@email.com',
-    documentNumber: '345.678.901-22',
-    courseId: 'course-3',
-    completionDate: '2026-02-18',
-    notes: 'Protótipo de Design System aprovado.',
-    createdAt: '2026-01-14T11:00:00Z',
-  },
-  {
-    id: 'student-4',
-    fullName: 'Camila Rocha Santos',
-    email: 'camila.rocha@email.com',
-    documentNumber: '456.789.012-33',
-    courseId: 'course-4',
-    completionDate: '2026-02-14',
-    notes: 'Participação ativa nas dinâmicas de sprint.',
-    createdAt: '2026-01-16T09:00:00Z',
+    fullName: 'MARCOS ANTONIO ALBUQUERQUE',
+    email: 'marcos.albuquerque@eb.mil.br',
+    documentNumber: '112.334.556-77',
+    registrationNumber: '08492019482',
+    cnhCategory: 'D',
+    courseId: 'course-cvte',
+    completionDate: '2026-06-16',
+    notes: 'Conclusão com excelente aproveitamento.',
+    createdAt: '2026-06-05T15:00:00Z',
   },
 ];
 
 const rawCertificates = [
   {
-    id: 'cert-1',
+    id: 'cert-cvte-006',
     uuid: 'a3d2e5b8-17a4-4f51-9c60-84f932e6a101',
-    code: 'CERT-2026-A8F42X',
-    studentId: 'student-1',
-    studentName: 'João da Silva',
-    studentDocument: '123.456.789-00',
-    courseId: 'course-1',
-    courseName: 'Introdução à Inteligência Artificial & LLMs',
-    courseDescription: 'Fundamentos de IA Generativa e LLMs.',
-    workloadHours: 40,
-    modality: 'online' as const,
-    instructorName: 'Prof. Carlos Eduardo',
-    institutionName: 'Tech Academy Brasil',
-    issueDate: '2026-02-16',
-    startDate: '2026-01-10',
-    endDate: '2026-02-15',
-    location: 'São Paulo, SP',
-    signatoryName: 'Dra. Maria Souza',
-    signatoryRole: 'Diretora Acadêmica',
-    customText:
-      'Certificamos que João da Silva concluiu com êxito o curso Introdução à Inteligência Artificial & LLMs, com carga horária total de 40 horas, realizado no período de 10/01/2026 a 15/02/2026 na modalidade Online.',
-    templateId: 'official' as const,
-    themeSettings: TEMPLATE_PRESETS[0].defaultTheme,
-    status: 'active' as const,
-    createdAt: '2026-02-16T10:30:00Z',
-  },
-  {
-    id: 'cert-2',
-    uuid: 'b4e3f6c9-28b5-4a62-ad71-95a043f7b202',
-    code: 'CERT-2026-B9K73Z',
-    studentId: 'student-2',
-    studentName: 'Ana Beatriz Mendes',
-    studentDocument: '234.567.890-11',
-    courseId: 'course-2',
-    courseName: 'Desenvolvimento Web Full Stack Moderno',
-    courseDescription: 'TypeScript, React, Node.js e APIs RESTful.',
-    workloadHours: 80,
-    modality: 'online' as const,
-    instructorName: 'Mariana Duarte',
-    institutionName: 'Tech Academy Brasil',
-    issueDate: '2026-02-21',
-    startDate: '2026-01-05',
-    endDate: '2026-02-20',
-    location: 'São Paulo, SP',
-    signatoryName: 'Dra. Maria Souza',
-    signatoryRole: 'Diretora Acadêmica',
-    customText:
-      'Certificamos que Ana Beatriz Mendes concluiu com distinção e aproveitamento exemplar o curso Desenvolvimento Web Full Stack Moderno, cumprindo com excelência a carga horária de 80 horas no período de 05/01/2026 a 20/02/2026.',
-    templateId: 'official' as const,
-    themeSettings: TEMPLATE_PRESETS[0].defaultTheme,
-    status: 'active' as const,
-    createdAt: '2026-02-21T14:15:00Z',
-  },
-  {
-    id: 'cert-3',
-    uuid: 'c5f4a7d0-39c6-4b73-be82-06b154a8c303',
-    code: 'CERT-2026-C4N15Q',
-    studentId: 'student-3',
-    studentName: 'Lucas Gabriel Oliveira',
-    studentDocument: '345.678.901-22',
-    courseId: 'course-3',
-    courseName: 'UI/UX Design & Design Systems',
-    courseDescription: 'Design de interfaces modernas e acessibilidade.',
-    workloadHours: 32,
-    modality: 'hibrido' as const,
-    instructorName: 'Rodrigo Lima',
-    institutionName: 'Tech Academy Brasil',
-    issueDate: '2026-02-19',
-    startDate: '2026-01-20',
-    endDate: '2026-02-18',
-    location: 'São Paulo, SP',
-    signatoryName: 'Dra. Maria Souza',
-    signatoryRole: 'Diretora Acadêmica',
-    customText:
-      'Certificamos que Lucas Gabriel Oliveira participou e concluiu o programa de capacitação profissional em UI/UX Design & Design Systems, totalizando 32 horas de formação técnica.',
-    templateId: 'official' as const,
-    themeSettings: TEMPLATE_PRESETS[0].defaultTheme,
-    status: 'cancelled' as const,
-    cancelledAt: '2026-02-22T09:00:00Z',
-    cancelledBy: 'Administrador (Admin)',
-    cancellationReason: 'Emissão duplicada corrigida pelo setor acadêmico.',
-    createdAt: '2026-02-19T16:00:00Z',
-  },
-  {
-    id: 'cert-4',
-    uuid: 'd6a5b8e1-40d7-4c84-cf93-17c265b9d404',
-    code: 'CERT-2025-EXP999',
-    studentId: 'student-4',
-    studentName: 'Camila Rocha Santos',
-    studentDocument: '456.789.012-33',
-    courseId: 'course-4',
-    courseName: 'Gestão Ágil de Projetos & Scrum Master',
-    courseDescription: 'Certificação profissional com validade temporal de 1 ano.',
-    workloadHours: 24,
+    code: '006/CVTE/2026',
+    studentId: 'student-carlos',
+    studentName: 'CARLOS HENRIQUE CAETANO DA SILVA',
+    studentDocument: '067.440.731-84',
+    registrationNumber: '07575025319',
+    cnhCategory: 'AD',
+    courseId: 'course-cvte',
+    courseName: 'Curso Especializado para Condutores de Veículos de Transporte de Emergência',
+    courseSubhead: 'Condutores de Veículos de Transporte de Emergência',
+    courseDescription: 'Capacitação especializada de condutores de emergência.',
+    workloadHours: 50,
     modality: 'presencial' as const,
-    instructorName: 'Fernanda Barbosa',
-    institutionName: 'Tech Academy Brasil',
-    issueDate: '2024-02-14',
-    expiresAt: '2025-02-14',
-    startDate: '2024-02-01',
-    endDate: '2024-02-14',
-    location: 'São Paulo, SP',
-    signatoryName: 'Dra. Maria Souza',
-    signatoryRole: 'Diretora Acadêmica',
+    instructorName: 'Paulo de Jesus Camargo / Erik Santiago',
+    institutionName: 'Base Administrativa do Quartel-General do Exército – Forte Caxias',
+    institutionCnpj: '21.744.847/0001-50',
+    legalInstruction: 'Instrução Nº 592, de 10 de agosto de 2020/Detran-DF',
+    contranResolution: 'Resolução Nº 1.020/2025 do CONTRAN',
+    validityText: 'com validade de cinco anos após o término do curso',
+    syllabus: DEFAULT_CVTE_SYLLABUS,
+    issueDate: '2026-06-18',
+    startDate: '2026-06-08',
+    endDate: '2026-06-16',
+    location: 'Brasília-DF',
+    signatoryName: 'Carlos Henrique Ferreira De Mello',
+    signatoryRole: 'Diretor Geral',
+    signatoryCpf: '981.050.007-68',
     customText:
-      'Certificamos que Camila Rocha Santos completou a certificação em Gestão Ágil de Projetos & Scrum Master com carga horária de 24 horas.',
+      'A Instituição de Ensino de Trânsito da Base Administrativa do Quartel-General do Exército – Forte Caxias – (Instrução Nº 592, de 10 de agosto de 2020/Detran-DF) certifica que CARLOS HENRIQUE CAETANO DA SILVA, inscrito no CPF nº 067.440.731-84 e no Nº REGISTRO 07575025319, categoria “AD”, concluiu com aproveitamento o Curso Especializado para Condutores de Veículos de Transporte de Emergência, ministrado pela IET - Forte Caxias, no período de 08 a 16 de junho de 2026, com carga horária de 50h/a, com validade de cinco anos após o término do curso, conforme Resolução Nº 1.020/2025 do CONTRAN.',
     templateId: 'official' as const,
     themeSettings: TEMPLATE_PRESETS[0].defaultTheme,
-    status: 'expired' as const,
-    createdAt: '2024-02-14T10:00:00Z',
+    status: 'active' as const,
+    createdAt: '2026-06-18T10:30:00Z',
   },
 ];
 

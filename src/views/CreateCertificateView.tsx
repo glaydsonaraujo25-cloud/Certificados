@@ -1,28 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { CertificateDocument } from '../components/CertificateDocument';
+import { CertificateFrontPage, CertificateBackPage } from '../components/CertificateDocument';
 import { CertificateModal } from '../components/CertificateModal';
-import { Certificate } from '../types';
-import { exportCertificateToPdf } from '../utils/pdfGenerator';
+import { Certificate, SyllabusItem } from '../types';
+import { exportTwoPageCertificateToPdf } from '../utils/pdfGenerator';
+import { DEFAULT_CVTE_SYLLABUS } from '../utils/storage';
 import confetti from 'canvas-confetti';
 import {
-  Award,
   CheckCircle,
-  FileCheck,
   User,
   BookOpen,
   Calendar,
-  MapPin,
   Eye,
   ArrowRight,
   ArrowLeft,
-  Download,
-  Copy,
-  PlusCircle,
-  ShieldCheck,
-  Sparkles,
   Info,
   Loader2,
+  FileText,
+  Layers,
+  Plus,
+  Trash2,
+  Shield,
 } from 'lucide-react';
 
 export const CreateCertificateView: React.FC = () => {
@@ -32,37 +30,60 @@ export const CreateCertificateView: React.FC = () => {
     institution,
     issueCertificate,
     setCurrentView,
+    setValidationSearchCode,
   } = useApp();
 
   // Wizard Step: 1 = Form, 2 = Official Preview
   const [currentStep, setCurrentStep] = useState<1 | 2>(1);
+  const [previewTab, setPreviewTab] = useState<'front' | 'back' | 'both'>('front');
 
   // Student Form State
   const [studentMode, setStudentMode] = useState<'existing' | 'new'>('existing');
   const [selectedStudentId, setSelectedStudentId] = useState<string>(students[0]?.id || '');
-  const [studentName, setStudentName] = useState<string>(students[0]?.fullName || '');
-  const [studentEmail, setStudentEmail] = useState<string>(students[0]?.email || '');
-  const [studentDocument, setStudentDocument] = useState<string>(students[0]?.documentNumber || '');
+  const [studentName, setStudentName] = useState<string>(students[0]?.fullName || 'CARLOS HENRIQUE CAETANO DA SILVA');
+  const [studentEmail, setStudentEmail] = useState<string>(students[0]?.email || 'carlos.caetano@eb.mil.br');
+  const [studentDocument, setStudentDocument] = useState<string>(students[0]?.documentNumber || '067.440.731-84');
+  const [registrationNumber, setRegistrationNumber] = useState<string>(students[0]?.registrationNumber || '07575025319');
+  const [cnhCategory, setCnhCategory] = useState<string>(students[0]?.cnhCategory || 'AD');
 
   // Course Form State
   const [courseMode, setCourseMode] = useState<'existing' | 'new'>('existing');
   const [selectedCourseId, setSelectedCourseId] = useState<string>(courses[0]?.id || '');
-  const [courseName, setCourseName] = useState<string>(courses[0]?.name || '');
-  const [workloadHours, setWorkloadHours] = useState<number>(courses[0]?.workloadHours || 40);
-  const [modality, setModality] = useState<'online' | 'presencial' | 'hibrido'>(courses[0]?.modality || 'online');
-  const [instructorName, setInstructorName] = useState<string>(courses[0]?.instructorName || '');
-  const [startDate, setStartDate] = useState<string>(courses[0]?.startDate || '2026-01-10');
-  const [endDate, setEndDate] = useState<string>(courses[0]?.endDate || '2026-02-15');
+  const [courseName, setCourseName] = useState<string>(
+    courses[0]?.name || 'Curso Especializado para Condutores de Veículos de Transporte de Emergência'
+  );
+  const [courseSubhead, setCourseSubhead] = useState<string>(
+    courses[0]?.courseSubhead || 'Condutores de Veículos de\nTransporte de Emergência'
+  );
+  const [workloadHours, setWorkloadHours] = useState<number>(courses[0]?.workloadHours || 50);
+  const [modality, setModality] = useState<'online' | 'presencial' | 'hibrido'>(courses[0]?.modality || 'presencial');
+  const [instructorName, setInstructorName] = useState<string>(courses[0]?.instructorName || 'Paulo de Jesus Camargo / Erik Santiago');
+  const [startDate, setStartDate] = useState<string>(courses[0]?.startDate || '2026-06-08');
+  const [endDate, setEndDate] = useState<string>(courses[0]?.endDate || '2026-06-16');
+
+  // Legal Framework & Directives
+  const [legalInstruction, setLegalInstruction] = useState<string>(
+    institution.legalInstruction || 'Instrução Nº 592, de 10 de agosto de 2020/Detran-DF'
+  );
+  const [contranResolution, setContranResolution] = useState<string>(
+    institution.contranResolution || 'Resolução Nº 1.020/2025 do CONTRAN'
+  );
+  const [validityText, setValidityText] = useState<string>(
+    institution.validityText || 'com validade de cinco anos após o término do curso'
+  );
+
+  // Syllabus (Verso) State
+  const [syllabus, setSyllabus] = useState<SyllabusItem[]>(
+    courses[0]?.syllabus && courses[0]?.syllabus.length > 0 ? courses[0].syllabus : DEFAULT_CVTE_SYLLABUS
+  );
 
   // Emission & Location State
-  const [issueDate, setIssueDate] = useState<string>(new Date().toISOString().split('T')[0]);
-  const [location, setLocation] = useState<string>(`${institution.city || 'São Paulo'}, ${institution.state || 'SP'}`);
-  const [observations, setObservations] = useState<string>('');
+  const [issueDate, setIssueDate] = useState<string>('2026-06-18');
+  const [location, setLocation] = useState<string>(`${institution.city || 'Brasília'}-${institution.state || 'DF'}`);
 
   // Post-Issuance State
   const [createdCertificate, setCreatedCertificate] = useState<Certificate | null>(null);
   const [isIssuing, setIsIssuing] = useState<boolean>(false);
-  const [downloadingPdf, setDownloadingPdf] = useState<boolean>(false);
 
   // Sync selected student
   useEffect(() => {
@@ -72,6 +93,8 @@ export const CreateCertificateView: React.FC = () => {
         setStudentName(student.fullName);
         setStudentEmail(student.email || '');
         setStudentDocument(student.documentNumber || '');
+        if (student.registrationNumber) setRegistrationNumber(student.registrationNumber);
+        if (student.cnhCategory) setCnhCategory(student.cnhCategory);
         if (student.courseId && courses.some((c) => c.id === student.courseId)) {
           setSelectedCourseId(student.courseId);
         }
@@ -85,14 +108,45 @@ export const CreateCertificateView: React.FC = () => {
       const course = courses.find((c) => c.id === selectedCourseId);
       if (course) {
         setCourseName(course.name);
+        if (course.courseSubhead) setCourseSubhead(course.courseSubhead);
         setWorkloadHours(course.workloadHours);
         setModality(course.modality);
         setInstructorName(course.instructorName);
         if (course.startDate) setStartDate(course.startDate);
         if (course.endDate) setEndDate(course.endDate);
+        if (course.legalInstruction) setLegalInstruction(course.legalInstruction);
+        if (course.contranResolution) setContranResolution(course.contranResolution);
+        if (course.syllabus && course.syllabus.length > 0) setSyllabus(course.syllabus);
       }
     }
   }, [selectedCourseId, courseMode, courses]);
+
+  // Syllabus row handlers
+  const handleUpdateSyllabusRow = (index: number, field: keyof SyllabusItem, value: string) => {
+    const updated = [...syllabus];
+    updated[index] = { ...updated[index], [field]: value };
+    setSyllabus(updated);
+  };
+
+  const handleAddSyllabusRow = () => {
+    setSyllabus([
+      ...syllabus,
+      {
+        discipline: 'Nova Disciplina Especializada',
+        workload: '10h/a',
+        grade: '10',
+        instructor: instructorName || 'Instrutor Responsável',
+      },
+    ]);
+  };
+
+  const handleRemoveSyllabusRow = (index: number) => {
+    if (syllabus.length <= 1) {
+      alert('O conteúdo programático deve ter no mínimo uma disciplina.');
+      return;
+    }
+    setSyllabus(syllabus.filter((_, idx) => idx !== index));
+  };
 
   // Validation
   const validateForm = () => {
@@ -123,40 +177,42 @@ export const CreateCertificateView: React.FC = () => {
     try {
       const newCert = issueCertificate({
         studentId: selectedStudentId || `std-temp-${Date.now()}`,
-        studentName: studentName.trim(),
+        studentName: studentName.trim().toUpperCase(),
         studentEmail: studentEmail.trim() || undefined,
-        studentDocument: studentDocument.trim() || undefined,
+        studentDocument: studentDocument.trim() || '067.440.731-84',
+        registrationNumber: registrationNumber.trim() || '07575025319',
+        cnhCategory: cnhCategory.trim() || 'AD',
         courseId: selectedCourseId || `crs-temp-${Date.now()}`,
         courseName: courseName.trim(),
+        courseSubhead: courseSubhead.trim(),
         workloadHours: Number(workloadHours),
         modality,
-        instructorName: instructorName.trim() || 'Prof. Coordenador',
-        institutionName: institution.name || 'Tech Academy Brasil',
-        institutionLogoUrl: institution.logoUrl,
+        instructorName: instructorName.trim() || 'Paulo de Jesus Camargo / Erik Santiago',
+        institutionName: institution.name || 'Base Administrativa do Quartel-General do Exército – Forte Caxias',
+        institutionCnpj: institution.institutionCnpj || '21.744.847/0001-50',
+        legalInstruction,
+        contranResolution,
+        validityText,
+        syllabus,
         issueDate,
         startDate,
         endDate,
         location,
-        signatoryName: institution.signatureName || 'Dra. Maria Souza',
-        signatoryRole: institution.signatureRole || 'Diretora Acadêmica',
+        signatoryName: institution.signatoryName || 'Carlos Henrique Ferreira De Mello',
+        signatoryRole: institution.signatoryRole || 'Diretor Geral',
+        signatoryCpf: institution.signatoryCpf || '981.050.007-68',
         signatureImageUrl: institution.signatureImageUrl,
-        secondSignatoryName: institution.showSecondSignature ? institution.secondSignatureName : undefined,
-        secondSignatoryRole: institution.showSecondSignature ? institution.secondSignatureRole : undefined,
-        secondSignatureImageUrl: institution.showSecondSignature ? institution.secondSignatureImageUrl : undefined,
-        customText: institution.defaultCertificateText,
-        observations: observations.trim() || undefined,
         templateId: 'official',
       });
 
       setCreatedCertificate(newCert);
 
-      // Trigger celebration confetti
       try {
         confetti({
-          particleCount: 80,
-          spread: 70,
+          particleCount: 90,
+          spread: 80,
           origin: { y: 0.6 },
-          colors: ['#4F46E5', '#D97706', '#10B981', '#3B82F6'],
+          colors: ['#B45309', '#D97706', '#1E3A8A', '#10B981'],
         });
       } catch {}
     } catch (err) {
@@ -166,29 +222,13 @@ export const CreateCertificateView: React.FC = () => {
     }
   };
 
-  const handleDownloadPdf = async (cert: Certificate) => {
-    try {
-      setDownloadingPdf(true);
-      await exportCertificateToPdf({
-        elementId: 'preview-official-certificate-canvas',
-        studentName: cert.studentName,
-        courseName: cert.courseName,
-      });
-    } catch (err) {
-      alert('Erro ao gerar o arquivo PDF. Tente novamente.');
-    } finally {
-      setDownloadingPdf(false);
-    }
-  };
-
   const handleResetForNewEmission = () => {
     setCreatedCertificate(null);
     setCurrentStep(1);
     setStudentName('');
     setStudentEmail('');
     setStudentDocument('');
-    setObservations('');
-    setStudentMode('existing');
+    setStudentMode('new');
   };
 
   return (
@@ -197,16 +237,16 @@ export const CreateCertificateView: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <span className="px-2.5 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 font-semibold text-xs">
-              Modelo Oficial Padronizado
+            <span className="px-2.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 font-bold text-xs border border-amber-300 dark:border-amber-800">
+              Modelo Oficial Padronizado • Forte Caxias
             </span>
-            <span className="text-xs text-slate-400">• A4 Paisagem (297 x 210 mm)</span>
+            <span className="text-xs text-slate-400">• A4 Paisagem (Frente & Verso)</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white mt-1">
-            Emitir Certificado
+            Emitir Certificado Oficial
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            Preencha os dados do aluno e do curso para gerar o certificado com identificador e QR Code de autenticidade.
+            Preencha os dados do condutor/aluno e diretrizes do curso para gerar o certificado em padrão oficial.
           </p>
         </div>
 
@@ -216,7 +256,7 @@ export const CreateCertificateView: React.FC = () => {
             <span
               className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
                 currentStep === 1
-                  ? 'bg-indigo-600 text-white'
+                  ? 'bg-amber-600 text-white'
                   : 'bg-emerald-600 text-white'
               }`}
             >
@@ -229,7 +269,7 @@ export const CreateCertificateView: React.FC = () => {
             <span
               className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
                 currentStep === 2
-                  ? 'bg-indigo-600 text-white'
+                  ? 'bg-amber-600 text-white'
                   : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
               }`}
             >
@@ -243,19 +283,19 @@ export const CreateCertificateView: React.FC = () => {
       {/* STEP 1: FORM VIEW */}
       {currentStep === 1 && (
         <form onSubmit={handleProceedToPreview} className="space-y-6">
-          {/* Card 1: Aluno */}
+          {/* Card 1: Aluno / Condutor */}
           <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center">
                   <User className="w-4 h-4" />
                 </div>
                 <div>
                   <h2 className="font-bold text-base text-slate-900 dark:text-white">
-                    1. Dados do Aluno (Destinatário)
+                    1. Dados do Aluno / Condutor
                   </h2>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
-                    O nome será renderizado em destaque no centro do modelo oficial.
+                    Informações pessoais, CPF, Nº de Registro e Categoria da CNH.
                   </p>
                 </div>
               </div>
@@ -265,13 +305,13 @@ export const CreateCertificateView: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setStudentMode('existing')}
-                  className={`px-3 py-1 rounded-md transition-all ${
+                  className={`px-3 py-1 rounded-md transition-all cursor-pointer ${
                     studentMode === 'existing'
-                      ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-300 shadow-xs'
+                      ? 'bg-white dark:bg-slate-700 text-amber-700 dark:text-amber-300 shadow-xs font-bold'
                       : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
                   }`}
                 >
-                  Aluno Cadastrado
+                  Cadastrado
                 </button>
                 <button
                   type="button"
@@ -279,9 +319,9 @@ export const CreateCertificateView: React.FC = () => {
                     setStudentMode('new');
                     setSelectedStudentId('');
                   }}
-                  className={`px-3 py-1 rounded-md transition-all ${
+                  className={`px-3 py-1 rounded-md transition-all cursor-pointer ${
                     studentMode === 'new'
-                      ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-300 shadow-xs'
+                      ? 'bg-white dark:bg-slate-700 text-amber-700 dark:text-amber-300 shadow-xs font-bold'
                       : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
                   }`}
                 >
@@ -298,144 +338,123 @@ export const CreateCertificateView: React.FC = () => {
                 <select
                   value={selectedStudentId}
                   onChange={(e) => setSelectedStudentId(e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:outline-hidden font-medium"
+                  className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:outline-hidden font-medium"
                 >
                   {students.map((s) => (
                     <option key={s.id} value={s.id}>
-                      {s.fullName} {s.documentNumber ? `(${s.documentNumber})` : ''} - {s.email}
+                      {s.fullName} {s.documentNumber ? `(CPF: ${s.documentNumber})` : ''} - Reg: {s.registrationNumber || 'N/A'} - Cat: {s.cnhCategory || 'N/A'}
                     </option>
                   ))}
                 </select>
               </div>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-1">
               <div className="md:col-span-2">
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                  Nome Completo do Aluno *
+                  Nome Completo do Aluno (em letras maiúsculas) *
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="Ex: Dra. Mariana Albuquerque de Souza"
+                  placeholder="Ex: CARLOS HENRIQUE CAETANO DA SILVA"
                   value={studentName}
-                  onChange={(e) => setStudentName(e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 focus:outline-hidden font-medium"
+                  onChange={(e) => setStudentName(e.target.value.toUpperCase())}
+                  className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:ring-2 focus:ring-amber-500 focus:outline-hidden font-bold"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                  CPF / Identificação (Opcional)
+                  CPF do Aluno *
                 </label>
                 <input
                   type="text"
-                  placeholder="Ex: 123.456.789-00"
+                  required
+                  placeholder="Ex: 067.440.731-84"
                   value={studentDocument}
                   onChange={(e) => setStudentDocument(e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 focus:outline-hidden"
+                  className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:ring-2 focus:ring-amber-500 focus:outline-hidden font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                  Nº de Registro CNH
+                </label>
+                <input
+                  type="text"
+                  placeholder="Ex: 07575025319"
+                  value={registrationNumber}
+                  onChange={(e) => setRegistrationNumber(e.target.value)}
+                  className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:ring-2 focus:ring-amber-500 focus:outline-hidden font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                  Categoria CNH
+                </label>
+                <input
+                  type="text"
+                  placeholder="Ex: AD, B, D, E"
+                  value={cnhCategory}
+                  onChange={(e) => setCnhCategory(e.target.value.toUpperCase())}
+                  className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:ring-2 focus:ring-amber-500 focus:outline-hidden font-bold"
                 />
               </div>
 
               <div className="md:col-span-3">
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                  E-mail do Aluno (Para envio do link de autenticidade)
+                  E-mail do Aluno
                 </label>
                 <input
                   type="email"
-                  placeholder="aluno@exemplo.com.br"
+                  placeholder="aluno@eb.mil.br"
                   value={studentEmail}
                   onChange={(e) => setStudentEmail(e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 focus:outline-hidden"
+                  className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:ring-2 focus:ring-amber-500 focus:outline-hidden"
                 />
               </div>
             </div>
           </div>
 
-          {/* Card 2: Curso */}
+          {/* Card 2: Curso & Normativas */}
           <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center">
                   <BookOpen className="w-4 h-4" />
                 </div>
                 <div>
                   <h2 className="font-bold text-base text-slate-900 dark:text-white">
-                    2. Dados do Curso & Carga Horária
+                    2. Dados do Curso, Período & Normativas Oficiais
                   </h2>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Informações acadêmicas e período de realização.
+                    Informações acadêmicas e fundamentação legal (CONTRAN/Detran).
                   </p>
                 </div>
               </div>
-
-              {/* Mode Toggle: Existing vs New Course */}
-              <div className="flex items-center p-1 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs font-medium">
-                <button
-                  type="button"
-                  onClick={() => setCourseMode('existing')}
-                  className={`px-3 py-1 rounded-md transition-all ${
-                    courseMode === 'existing'
-                      ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-300 shadow-xs'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
-                  }`}
-                >
-                  Curso Cadastrado
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setCourseMode('new');
-                    setSelectedCourseId('');
-                  }}
-                  className={`px-3 py-1 rounded-md transition-all ${
-                    courseMode === 'new'
-                      ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-300 shadow-xs'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
-                  }`}
-                >
-                  Personalizado
-                </button>
-              </div>
             </div>
-
-            {courseMode === 'existing' && courses.length > 0 && (
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                  Selecionar Curso Cadastrado
-                </label>
-                <select
-                  value={selectedCourseId}
-                  onChange={(e) => setSelectedCourseId(e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:outline-hidden font-medium"
-                >
-                  {courses.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name} ({c.workloadHours}h - {c.modality})
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
               <div className="md:col-span-2">
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                  Nome do Curso *
+                  Nome Completo do Curso *
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="Ex: Introdução à Inteligência Artificial & LLMs"
+                  placeholder="Ex: Curso Especializado para Condutores de Veículos de Transporte de Emergência"
                   value={courseName}
                   onChange={(e) => setCourseName(e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 focus:outline-hidden font-medium"
+                  className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:ring-2 focus:ring-amber-500 focus:outline-hidden font-medium"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                  Carga Horária (Horas) *
+                  Carga Horária (h/a) *
                 </label>
                 <input
                   type="number"
@@ -444,7 +463,20 @@ export const CreateCertificateView: React.FC = () => {
                   max={2000}
                   value={workloadHours}
                   onChange={(e) => setWorkloadHours(parseInt(e.target.value) || 0)}
-                  className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:outline-hidden font-medium"
+                  className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:outline-hidden font-bold"
+                />
+              </div>
+
+              <div className="md:col-span-3">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                  Subtítulo de Destaque no Cabeçalho (Frente)
+                </label>
+                <input
+                  type="text"
+                  placeholder="Ex: Condutores de Veículos de Transporte de Emergência"
+                  value={courseSubhead}
+                  onChange={(e) => setCourseSubhead(e.target.value)}
+                  className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:ring-2 focus:ring-amber-500 focus:outline-hidden"
                 />
               </div>
 
@@ -456,113 +488,161 @@ export const CreateCertificateView: React.FC = () => {
                   type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:outline-hidden"
+                  className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:outline-hidden"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                  Data de Término / Conclusão
+                  Data de Término
                 </label>
                 <input
                   type="date"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:outline-hidden"
+                  className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:outline-hidden"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                  Modalidade
-                </label>
-                <select
-                  value={modality}
-                  onChange={(e) => setModality(e.target.value as any)}
-                  className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:outline-hidden"
-                >
-                  <option value="online">Online / EAD</option>
-                  <option value="presencial">Presencial</option>
-                  <option value="hibrido">Híbrido</option>
-                </select>
-              </div>
-
-              <div className="md:col-span-3">
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                  Instrutor / Professor Responsável
-                </label>
-                <input
-                  type="text"
-                  placeholder="Ex: Prof. Dr. Carlos Eduardo"
-                  value={instructorName}
-                  onChange={(e) => setInstructorName(e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 focus:outline-hidden"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Card 3: Emissão & Local */}
-          <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-4">
-            <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
-              <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
-                <Calendar className="w-4 h-4" />
-              </div>
-              <div>
-                <h2 className="font-bold text-base text-slate-900 dark:text-white">
-                  3. Emissão & Informações Complementares
-                </h2>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Data de registro, cidade e eventuais anotações de verso/rodapé.
-                </p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                  Data de Emissão do Certificado
+                  Data de Emissão
                 </label>
                 <input
                   type="date"
                   value={issueDate}
                   onChange={(e) => setIssueDate(e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:outline-hidden"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                  Localidade (Cidade, UF)
-                </label>
-                <input
-                  type="text"
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                  placeholder="Ex: São Paulo, SP"
-                  className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:outline-hidden"
+                  className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:outline-hidden"
                 />
               </div>
 
               <div className="md:col-span-2">
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                  Observações ou Texto Complementar (Opcional)
+                  Instrução Normativa / Homologação Detran
                 </label>
                 <input
                   type="text"
-                  placeholder="Ex: Aprovado com louvor e distinção no Trabalho de Conclusão."
-                  value={observations}
-                  onChange={(e) => setObservations(e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 focus:outline-hidden"
+                  value={legalInstruction}
+                  onChange={(e) => setLegalInstruction(e.target.value)}
+                  placeholder="Ex: Instrução Nº 592, de 10 de agosto de 2020/Detran-DF"
+                  className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:outline-hidden"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                  Resolução CONTRAN
+                </label>
+                <input
+                  type="text"
+                  value={contranResolution}
+                  onChange={(e) => setContranResolution(e.target.value)}
+                  placeholder="Ex: Resolução Nº 1.020/2025 do CONTRAN"
+                  className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:outline-hidden"
                 />
               </div>
             </div>
+          </div>
+
+          {/* Card 3: Conteúdo Programático (Verso do Certificado) */}
+          <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                  <Layers className="w-4 h-4" />
+                </div>
+                <div>
+                  <h2 className="font-bold text-base text-slate-900 dark:text-white">
+                    3. Conteúdo Programático (Página 2: Verso)
+                  </h2>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Grade curricular, carga horária por disciplina, notas de avaliação e instrutores.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleAddSyllabusRow}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 rounded-lg text-xs font-bold border border-amber-200 dark:border-amber-800 hover:bg-amber-100 cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" /> Adicionar Disciplina
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              {syllabus.map((item, idx) => (
+                <div
+                  key={idx}
+                  className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center p-3 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700"
+                >
+                  <div className="md:col-span-5">
+                    <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">
+                      Disciplina
+                    </label>
+                    <input
+                      type="text"
+                      value={item.discipline}
+                      onChange={(e) => handleUpdateSyllabusRow(idx, 'discipline', e.target.value)}
+                      className="w-full px-2.5 py-1.5 text-xs rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 font-medium"
+                    />
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">
+                      Carga Horária
+                    </label>
+                    <input
+                      type="text"
+                      value={item.workload}
+                      onChange={(e) => handleUpdateSyllabusRow(idx, 'workload', e.target.value)}
+                      className="w-full px-2.5 py-1.5 text-xs rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 font-medium text-center"
+                    />
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">
+                      Avaliação / Nota
+                    </label>
+                    <input
+                      type="text"
+                      value={item.grade}
+                      onChange={(e) => handleUpdateSyllabusRow(idx, 'grade', e.target.value)}
+                      className="w-full px-2.5 py-1.5 text-xs rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 font-black text-center"
+                    />
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">
+                      Instrutor
+                    </label>
+                    <input
+                      type="text"
+                      value={item.instructor}
+                      onChange={(e) => handleUpdateSyllabusRow(idx, 'instructor', e.target.value.toUpperCase())}
+                      className="w-full px-2.5 py-1.5 text-xs rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 font-medium uppercase"
+                    />
+                  </div>
+
+                  <div className="md:col-span-1 flex justify-center pt-4 md:pt-0">
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveSyllabusRow(idx)}
+                      className="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-lg cursor-pointer transition-colors"
+                      title="Remover disciplina"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
 
             {/* Institutional Template Notice */}
-            <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 flex items-start gap-3 text-xs text-slate-600 dark:text-slate-400">
-              <Info className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0 mt-0.5" />
+            <div className="p-3.5 rounded-xl bg-amber-50/70 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-800/60 flex items-start gap-3 text-xs text-amber-900 dark:text-amber-200">
+              <Shield className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
               <div>
-                <strong className="text-slate-800 dark:text-slate-200">Padronização Institucional Ativa:</strong> O layout, logomarca oficial, assinaturas da diretoria ({institution.signatureName || 'Dra. Maria Souza'}), moldura de alta segurança e QR Code criptográfico são aplicados automaticamente a partir das configurações do <strong>Modelo Oficial</strong>.
+                <strong className="text-amber-950 dark:text-amber-100">Padrão Oficial de Emissão:</strong> Os brasões heráldicos do SGEx e da Base Administrativa do QGEx, a moldura histórica com cantoneiras barrocas, a assinatura oficial do Diretor Geral ({institution.signatoryName || 'Carlos Henrique Ferreira De Mello'}) e o CNPJ ({institution.institutionCnpj || '21.744.847/0001-50'}) são renderizados com exatidão no documento final.
               </div>
             </div>
           </div>
@@ -571,10 +651,10 @@ export const CreateCertificateView: React.FC = () => {
           <div className="flex items-center justify-end gap-3 pt-2">
             <button
               type="submit"
-              className="flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-xl shadow-md transition-all hover:scale-[1.01]"
+              className="flex items-center gap-2 px-6 py-3 bg-amber-600 hover:bg-amber-700 text-white font-bold text-sm rounded-xl shadow-md transition-all hover:scale-[1.01] cursor-pointer"
             >
               <Eye className="w-4 h-4" />
-              <span>Pré-visualizar Certificado Oficial</span>
+              <span>Pré-visualizar Certificado Oficial (Frente & Verso)</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>
@@ -590,13 +670,47 @@ export const CreateCertificateView: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setCurrentStep(1)}
-                className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
-                <span>Voltar e Corrigir Dados</span>
+                <span>Voltar e Editar</span>
               </button>
-              <div className="hidden md:block text-xs text-slate-500">
-                Verifique os dados antes da emissão definitiva
+
+              {/* Preview Tab Selector */}
+              <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setPreviewTab('front')}
+                  className={`px-3 py-1.5 rounded-md transition-all cursor-pointer ${
+                    previewTab === 'front'
+                      ? 'bg-white dark:bg-slate-700 text-amber-700 dark:text-amber-300 font-bold shadow-xs'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                  }`}
+                >
+                  Página 1: Frente
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPreviewTab('back')}
+                  className={`px-3 py-1.5 rounded-md transition-all cursor-pointer ${
+                    previewTab === 'back'
+                      ? 'bg-white dark:bg-slate-700 text-amber-700 dark:text-amber-300 font-bold shadow-xs'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                  }`}
+                >
+                  Página 2: Verso
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPreviewTab('both')}
+                  className={`px-3 py-1.5 rounded-md transition-all cursor-pointer hidden md:inline-block ${
+                    previewTab === 'both'
+                      ? 'bg-white dark:bg-slate-700 text-amber-700 dark:text-amber-300 font-bold shadow-xs'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                  }`}
+                >
+                  Ambas as Páginas
+                </button>
               </div>
             </div>
 
@@ -605,7 +719,7 @@ export const CreateCertificateView: React.FC = () => {
                 type="button"
                 onClick={handleConfirmAndIssue}
                 disabled={isIssuing}
-                className="flex items-center gap-2 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-xl shadow-md transition-all hover:scale-[1.01] disabled:opacity-50"
+                className="flex items-center gap-2 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-xl shadow-md transition-all hover:scale-[1.01] disabled:opacity-50 cursor-pointer"
               >
                 {isIssuing ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -618,36 +732,65 @@ export const CreateCertificateView: React.FC = () => {
           </div>
 
           {/* Certificate Canvas Render */}
-          <div className="bg-slate-200/80 dark:bg-slate-950 p-4 sm:p-8 rounded-2xl border border-slate-300 dark:border-slate-800 flex justify-center items-center overflow-x-auto shadow-inner">
-            <div className="transform scale-[0.80] sm:scale-100 origin-center transition-transform">
-              <CertificateDocument
-                certificate={{
-                  studentName,
-                  studentDocument: studentDocument || undefined,
-                  courseName,
-                  workloadHours,
-                  modality,
-                  instructorName,
-                  institutionName: institution.name || 'Tech Academy Brasil',
-                  institutionLogoUrl: institution.logoUrl,
-                  issueDate,
-                  startDate,
-                  endDate,
-                  location,
-                  signatoryName: institution.signatureName || 'Dra. Maria Souza',
-                  signatoryRole: institution.signatureRole || 'Diretora Acadêmica',
-                  signatureImageUrl: institution.signatureImageUrl,
-                  secondSignatoryName: institution.showSecondSignature ? institution.secondSignatureName : undefined,
-                  secondSignatoryRole: institution.showSecondSignature ? institution.secondSignatureRole : undefined,
-                  secondSignatureImageUrl: institution.showSecondSignature ? institution.secondSignatureImageUrl : undefined,
-                  customText: institution.defaultCertificateText,
-                  observations: observations || undefined,
-                  code: 'CERT-2026-PREVIEW',
-                  templateId: 'official',
-                }}
-                elementId="preview-official-certificate-canvas"
-              />
-            </div>
+          <div className="bg-slate-200/80 dark:bg-slate-950 p-4 sm:p-8 rounded-2xl border border-slate-300 dark:border-slate-800 flex flex-col items-center gap-6 overflow-x-auto shadow-inner">
+            {(previewTab === 'front' || previewTab === 'both') && (
+              <div className="flex flex-col items-center w-full">
+                {previewTab === 'both' && (
+                  <div className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                    <FileText className="w-3.5 h-3.5" /> Página 1: Frente
+                  </div>
+                )}
+                <div className="transform scale-[0.70] sm:scale-[0.85] lg:scale-95 origin-top transition-transform shadow-2xl rounded-lg overflow-hidden">
+                  <CertificateFrontPage
+                    certificate={{
+                      studentName: studentName.toUpperCase(),
+                      studentDocument,
+                      registrationNumber,
+                      cnhCategory,
+                      courseName,
+                      courseSubhead,
+                      workloadHours,
+                      modality,
+                      instructorName,
+                      institutionName: institution.name || 'Base Administrativa do Quartel-General do Exército – Forte Caxias',
+                      institutionCnpj: institution.institutionCnpj || '21.744.847/0001-50',
+                      legalInstruction,
+                      contranResolution,
+                      validityText,
+                      issueDate,
+                      startDate,
+                      endDate,
+                      location,
+                      signatoryName: institution.signatoryName || 'Carlos Henrique Ferreira De Mello',
+                      signatoryRole: institution.signatoryRole || 'Diretor Geral',
+                      signatoryCpf: institution.signatoryCpf || '981.050.007-68',
+                      signatureImageUrl: institution.signatureImageUrl,
+                      code: '006/CVTE/2026',
+                    }}
+                    elementId="preview-front-certificate-canvas"
+                  />
+                </div>
+              </div>
+            )}
+
+            {(previewTab === 'back' || previewTab === 'both') && (
+              <div className="flex flex-col items-center w-full">
+                {previewTab === 'both' && (
+                  <div className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-widest mt-4 mb-2 flex items-center gap-1.5">
+                    <Layers className="w-3.5 h-3.5" /> Página 2: Verso (Conteúdo Programático)
+                  </div>
+                )}
+                <div className="transform scale-[0.70] sm:scale-[0.85] lg:scale-95 origin-top transition-transform shadow-2xl rounded-lg overflow-hidden">
+                  <CertificateBackPage
+                    certificate={{
+                      code: '006/CVTE/2026',
+                      syllabus,
+                    }}
+                    elementId="preview-back-certificate-canvas"
+                  />
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -656,7 +799,10 @@ export const CreateCertificateView: React.FC = () => {
       {createdCertificate && (
         <CertificateModal
           certificate={createdCertificate}
+          isOpen={!!createdCertificate}
           onClose={handleResetForNewEmission}
+          setCurrentView={setCurrentView}
+          setValidationSearchCode={setValidationSearchCode}
         />
       )}
     </div>

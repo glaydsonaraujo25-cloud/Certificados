@@ -10,6 +10,8 @@ import { StudentsView } from './views/StudentsView';
 import { ValidateCertificateView } from './views/ValidateCertificateView';
 import { SettingsView } from './views/SettingsView';
 import { ApiManagementView } from './views/ApiManagementView';
+import { AuditView } from './views/AuditView';
+import { BackupView } from './views/BackupView';
 
 const MainRouter: React.FC = () => {
   const { currentView } = useApp();
@@ -32,6 +34,10 @@ const MainRouter: React.FC = () => {
         return <ValidateCertificateView />;
       case 'api':
         return <ApiManagementView />;
+      case 'audit':
+        return <AuditView />;
+      case 'backup':
+        return <BackupView />;
       case 'settings':
       case 'templates':
         return <SettingsView />;

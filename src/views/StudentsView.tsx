@@ -5,12 +5,7 @@ import { CertificateModal } from '../components/CertificateModal';
 import { AlertTriangle, Award, BookOpen, CalendarDays, Edit2, Eye, Mail, PlusCircle, Search, Trash2, Users, X } from 'lucide-react';
 
 const digitsOnly = (value: string) => value.replace(/\D/g, '').slice(0, 11);
-const isValidCpf = (value: string) => {
-  const cpf = digitsOnly(value);
-  if (cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) return false;
-  const calc = (length: number) => { let sum = 0; for (let i = 0; i < length; i += 1) sum += Number(cpf[i]) * (length + 1 - i); const digit = (sum * 10) % 11; return digit === 10 ? 0 : digit; };
-  return calc(9) === Number(cpf[9]) && calc(10) === Number(cpf[10]);
-};
+const isValidCpf = (value: string) => digitsOnly(value).length === 11;
 
 export const StudentsView: React.FC = () => {
   const { students, courses, classes, addStudent, updateStudent, deleteStudent, certificates, setCurrentView, setValidationSearchCode } = useApp();
@@ -51,7 +46,7 @@ export const StudentsView: React.FC = () => {
     if (students.some((student) => student.id !== editingStudent?.id && student.email.trim().toLowerCase() === cleanEmail)) return 'Já existe um condutor cadastrado com este e-mail.';
     const cpf = digitsOnly(documentNumber);
     if (cpf.length !== 11) return 'O CPF deve possuir exatamente 11 dígitos.';
-    if (!isValidCpf(cpf)) return 'O CPF informado é inválido.';
+    if (!isValidCpf(cpf)) return 'O CPF deve possuir exatamente 11 dígitos.';
     if (students.some((student) => student.id !== editingStudent?.id && digitsOnly(student.documentNumber || '') === cpf)) return 'Já existe um condutor cadastrado com este CPF.';
     const registration = digitsOnly(registrationNumber);
     if (registration.length !== 11) return 'O Nº de registro deve possuir exatamente 11 dígitos.';

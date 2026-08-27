@@ -7,28 +7,53 @@ import { DEFAULT_AI_SYLLABUS } from '../utils/storage';
 import confetti from 'canvas-confetti';
 import { ArrowLeft, ArrowRight, CheckCircle, Eye, FileText, Layers, Loader2, Plus, Trash2, User, BookOpen } from 'lucide-react';
 
+const isValidCpf = (value: string) => {
+  const cpf = value.replace(/\D/g, '');
+  if (cpf.length !== 11) return true;
+  if (/^(\d)\1{10}$/.test(cpf)) return false;
+  const calc = (length: number) => {
+    let sum = 0;
+    for (let i = 0; i < length; i++) sum += Number(cpf[i]) * (length + 1 - i);
+    const digit = (sum * 10) % 11;
+    return digit === 10 ? 0 : digit;
+  };
+  return calc(9) === Number(cpf[9]) && calc(10) === Number(cpf[10]);
+};
+
 export const CreateCertificateView: React.FC = () => {
   const { courses, students, institution, issueCertificate, setCurrentView, setValidationSearchCode } = useApp();
+  const prefillStudentId = typeof window !== 'undefined' ? sessionStorage.getItem('certifyai_prefill_student') || '' : '';
+  const prefillCourseId = typeof window !== 'undefined' ? sessionStorage.getItem('certifyai_prefill_course') || '' : '';
+  const initialStudent = students.find((student) => student.id === prefillStudentId) || students[0];
+  const initialCourse = courses.find((course) => course.id === (prefillCourseId || initialStudent?.courseId)) || courses[0];
+
   const [currentStep, setCurrentStep] = useState<1 | 2>(1);
   const [previewTab, setPreviewTab] = useState<'front' | 'back' | 'both'>('front');
   const [studentMode, setStudentMode] = useState<'existing' | 'new'>('existing');
-  const [selectedStudentId, setSelectedStudentId] = useState(students[0]?.id || '');
-  const [studentName, setStudentName] = useState(students[0]?.fullName || '');
-  const [studentEmail, setStudentEmail] = useState(students[0]?.email || '');
-  const [studentDocument, setStudentDocument] = useState(students[0]?.documentNumber || '');
-  const [selectedCourseId, setSelectedCourseId] = useState(courses[0]?.id || '');
-  const [courseName, setCourseName] = useState(courses[0]?.name || 'Operador de Computador com IA');
-  const [courseSubhead, setCourseSubhead] = useState(courses[0]?.courseSubhead || 'Operador de Computador com Inteligência Artificial');
-  const [workloadHours, setWorkloadHours] = useState(courses[0]?.workloadHours || 230);
-  const [modality, setModality] = useState<'online' | 'presencial' | 'hibrido'>(courses[0]?.modality || 'presencial');
-  const [instructorName, setInstructorName] = useState(courses[0]?.instructorName || 'Instrutor Responsável');
-  const [startDate, setStartDate] = useState(courses[0]?.startDate || '');
-  const [endDate, setEndDate] = useState(courses[0]?.endDate || '');
+  const [selectedStudentId, setSelectedStudentId] = useState(initialStudent?.id || '');
+  const [studentName, setStudentName] = useState(initialStudent?.fullName || '');
+  const [studentEmail, setStudentEmail] = useState(initialStudent?.email || '');
+  const [studentDocument, setStudentDocument] = useState(initialStudent?.documentNumber || '');
+  const [selectedCourseId, setSelectedCourseId] = useState(initialCourse?.id || '');
+  const [courseName, setCourseName] = useState(initialCourse?.name || 'Operador de Computador com IA');
+  const [courseSubhead, setCourseSubhead] = useState(initialCourse?.courseSubhead || 'Operador de Computador com Inteligência Artificial');
+  const [workloadHours, setWorkloadHours] = useState(initialCourse?.workloadHours || 230);
+  const [modality, setModality] = useState<'online' | 'presencial' | 'hibrido'>(initialCourse?.modality || 'presencial');
+  const [instructorName, setInstructorName] = useState(initialCourse?.instructorName || 'Instrutor Responsável');
+  const [startDate, setStartDate] = useState(initialCourse?.startDate || '');
+  const [endDate, setEndDate] = useState(initialCourse?.endDate || '');
   const [issueDate, setIssueDate] = useState(new Date().toISOString().split('T')[0]);
   const [location, setLocation] = useState(`${institution.city || 'Brasília'}-${institution.state || 'DF'}`);
-  const [syllabus, setSyllabus] = useState<SyllabusItem[]>(courses[0]?.syllabus?.length ? courses[0].syllabus : DEFAULT_AI_SYLLABUS);
+  const [syllabus, setSyllabus] = useState<SyllabusItem[]>(initialCourse?.syllabus?.length ? initialCourse.syllabus : DEFAULT_AI_SYLLABUS);
   const [createdCertificate, setCreatedCertificate] = useState<Certificate | null>(null);
   const [isIssuing, setIsIssuing] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('certifyai_prefill_student');
+      sessionStorage.removeItem('certifyai_prefill_course');
+    }
+  }, []);
 
   useEffect(() => {
     if (studentMode !== 'existing' || !selectedStudentId) return;
@@ -60,8 +85,16 @@ export const CreateCertificateView: React.FC = () => {
   const validate = () => {
     if (!studentName.trim()) { alert('Informe o nome completo do aluno.'); return false; }
     if (!studentDocument.trim()) { alert('Informe o CPF ou documento do aluno.'); return false; }
+    if (!isValidCpf(studentDocument)) { alert('O CPF informado é inválido. Verifique os números digitados.'); return false; }
+    if (studentEmail.trim() && !/^\S+@\S+\.\S+$/.test(studentEmail.trim())) { alert('Informe um e-mail válido.'); return false; }
     if (!courseName.trim()) { alert('Informe o nome do curso.'); return false; }
     if (workloadHours <= 0) { alert('Informe uma carga horária válida.'); return false; }
+    if (!startDate || !endDate) { alert('Informe as datas de início e término do curso.'); return false; }
+    if (startDate > endDate) { alert('A data de início não pode ser posterior à data de término.'); return false; }
+    if (!issueDate) { alert('Informe a data de emissão.'); return false; }
+    if (issueDate < endDate) { alert('A data de emissão não pode ser anterior à conclusão do curso.'); return false; }
+    if (!location.trim()) { alert('Informe o local de emissão.'); return false; }
+    if (!syllabus.length || syllabus.some((row) => !row.discipline.trim() || !row.workload.trim())) { alert('Revise o conteúdo programático. Todas as disciplinas precisam de nome e carga horária.'); return false; }
     return true;
   };
 
@@ -157,13 +190,13 @@ export const CreateCertificateView: React.FC = () => {
               <input value={courseName} onChange={(e) => setCourseName(e.target.value)} placeholder="Nome do curso" className="px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm" />
               <input type="number" min="1" value={workloadHours} onChange={(e) => setWorkloadHours(Number(e.target.value))} placeholder="Carga horária" className="px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm" />
               <input value={instructorName} onChange={(e) => setInstructorName(e.target.value)} placeholder="Instrutor responsável" className="px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm" />
-              <select value={modality} onChange={(e) => setModality(e.target.value as any)} className="px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm"><option value="presencial">Presencial</option><option value="online">Online</option><option value="hibrido">Híbrido</option></select>
-              <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm" />
-              <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm" />
+              <select value={modality} onChange={(e) => setModality(e.target.value as 'online' | 'presencial' | 'hibrido')} className="px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm"><option value="presencial">Presencial</option><option value="online">Online</option><option value="hibrido">Híbrido</option></select>
+              <label className="text-xs font-semibold text-slate-600 dark:text-slate-300">Início<input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="mt-1 w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm" /></label>
+              <label className="text-xs font-semibold text-slate-600 dark:text-slate-300">Término<input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="mt-1 w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm" /></label>
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between"><h3 className="text-sm font-bold">Conteúdo Programático</h3><button type="button" onClick={() => setSyllabus((prev) => [...prev, { discipline: 'Novo conteúdo', workload: '10h/a', grade: '10', instructor: instructorName || 'Instrutor Responsável' }])} className="text-xs font-semibold text-indigo-600 flex items-center gap-1"><Plus className="w-3.5 h-3.5" />Adicionar</button></div>
-              {syllabus.map((row, index) => <div key={index} className="grid grid-cols-12 gap-2"><input value={row.discipline} onChange={(e) => updateSyllabus(index, 'discipline', e.target.value)} className="col-span-6 px-2.5 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs" /><input value={row.workload} onChange={(e) => updateSyllabus(index, 'workload', e.target.value)} className="col-span-2 px-2.5 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs" /><input value={row.grade} onChange={(e) => updateSyllabus(index, 'grade', e.target.value)} className="col-span-2 px-2.5 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs" /><button type="button" onClick={() => setSyllabus((prev) => prev.filter((_, idx) => idx !== index))} className="col-span-2 flex justify-center items-center text-rose-600"><Trash2 className="w-4 h-4" /></button></div>)}
+              {syllabus.map((row, index) => <div key={index} className="grid grid-cols-12 gap-2"><input value={row.discipline} onChange={(e) => updateSyllabus(index, 'discipline', e.target.value)} className="col-span-6 px-2.5 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs" /><input value={row.workload} onChange={(e) => updateSyllabus(index, 'workload', e.target.value)} className="col-span-2 px-2.5 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs" /><input value={row.grade} onChange={(e) => updateSyllabus(index, 'grade', e.target.value)} className="col-span-2 px-2.5 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs" /><button type="button" disabled={syllabus.length <= 1} onClick={() => setSyllabus((prev) => prev.filter((_, idx) => idx !== index))} className="col-span-2 flex justify-center items-center text-rose-600 disabled:opacity-30" title={syllabus.length <= 1 ? 'Mantenha pelo menos uma disciplina' : 'Remover disciplina'}><Trash2 className="w-4 h-4" /></button></div>)}
             </div>
           </section>
 

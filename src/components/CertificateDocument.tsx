@@ -3,131 +3,99 @@ import { Certificate, SyllabusItem } from '../types';
 import { SGExEmblem } from './emblems/SGExEmblem';
 import { BAdmQgexEmblem } from './emblems/BAdmQgexEmblem';
 import { TopFiligree, BottomFiligree } from './emblems/FiligreeOrnaments';
-import {
-  VintageCornerTL,
-  VintageCornerTR,
-  VintageCornerBL,
-  VintageCornerBR,
-} from './emblems/VintageCorners';
+import { VintageCornerTL, VintageCornerTR, VintageCornerBL, VintageCornerBR } from './emblems/VintageCorners';
 import { MilitarySignatureGraphic } from './emblems/SignatureGraphic';
-import { DEFAULT_AI_SYLLABUS } from '../utils/storage';
+import { DEFAULT_CVTE_SYLLABUS } from '../utils/storage';
 
 interface CertificateDocumentProps {
-  certificate: Partial<Certificate> & {
-    studentName: string;
-    courseName: string;
-    workloadHours: number;
-    issueDate: string;
-    code: string;
-  };
+  certificate: Partial<Certificate> & { studentName: string; courseName: string; workloadHours: number; issueDate: string; code: string };
   elementId?: string;
   isCancelled?: boolean;
   page?: 'front' | 'back';
 }
 
-const formatDateBR = (isoDate?: string) => {
-  if (!isoDate) return '';
-  const parts = isoDate.split('-');
-  return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : isoDate;
+const formatDateExtenso = (iso?: string) => {
+  if (!iso) return '';
+  const p = iso.split('-');
+  if (p.length !== 3) return iso;
+  return new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2])).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
 };
 
-const formatDateExtensoBR = (isoDate?: string) => {
-  if (!isoDate) return '';
-  const parts = isoDate.split('-');
-  if (parts.length !== 3) return isoDate;
-  const date = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
-  return date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+const formatPeriod = (start?: string, end?: string) => {
+  if (!start || !end) return '';
+  const s = new Date(`${start}T00:00:00`);
+  const e = new Date(`${end}T00:00:00`);
+  if (s.getMonth() === e.getMonth() && s.getFullYear() === e.getFullYear()) return `${String(s.getDate()).padStart(2, '0')} a ${String(e.getDate()).padStart(2, '0')} de ${e.toLocaleDateString('pt-BR', { month: 'long' })} de ${e.getFullYear()}`;
+  return `${s.toLocaleDateString('pt-BR')} a ${e.toLocaleDateString('pt-BR')}`;
 };
 
-const CertificateFrame: React.FC<{ children: React.ReactNode; isCancelled?: boolean }> = ({ children, isCancelled }) => (
-  <div className="w-full h-full p-7 flex flex-col justify-between relative box-border">
-    {isCancelled && (
-      <div className="absolute inset-0 z-50 bg-rose-950/20 flex items-center justify-center pointer-events-none">
-        <div className="-rotate-12 border-8 border-rose-700 bg-rose-50/95 px-16 py-6 rounded-3xl shadow-2xl">
-          <span className="text-5xl font-black text-rose-700 tracking-widest uppercase font-sans">CANCELADO / REVOGADO</span>
-        </div>
-      </div>
-    )}
-    <div className="absolute inset-4 border-[3.5px] border-[#111827] pointer-events-none" />
-    <div className="absolute inset-6 border border-[#111827] pointer-events-none" />
-    <div className="absolute top-3.5 left-3.5 pointer-events-none"><VintageCornerTL size={74} color="#111827" /></div>
-    <div className="absolute top-3.5 right-3.5 pointer-events-none"><VintageCornerTR size={74} color="#111827" /></div>
-    <div className="absolute bottom-3.5 left-3.5 pointer-events-none"><VintageCornerBL size={74} color="#111827" /></div>
-    <div className="absolute bottom-3.5 right-3.5 pointer-events-none"><VintageCornerBR size={74} color="#111827" /></div>
-    {children}
-  </div>
-);
+const Underline: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => <span className={`font-bold border-b-[2px] border-slate-900 pb-[1px] ${className}`}>{children}</span>;
 
-export const CertificateFrontPage: React.FC<CertificateDocumentProps> = ({
-  certificate,
-  elementId = 'certificate-front-canvas',
-  isCancelled = false,
-}) => {
+const Frame: React.FC<{ children: React.ReactNode; isCancelled?: boolean }> = ({ children, isCancelled }) => <div className="w-full h-full relative box-border bg-white">
+  {isCancelled && <div className="absolute inset-0 z-50 bg-white/70 flex items-center justify-center"><div className="-rotate-12 border-8 border-rose-700 px-14 py-5 text-5xl font-black text-rose-700">CANCELADO</div></div>}
+  <div className="absolute inset-[14px] border-[3px] border-slate-900" />
+  <div className="absolute inset-[24px] border border-slate-900" />
+  <div className="absolute top-2 left-2"><VintageCornerTL size={82} color="#111827" /></div><div className="absolute top-2 right-2"><VintageCornerTR size={82} color="#111827" /></div><div className="absolute bottom-2 left-2"><VintageCornerBL size={82} color="#111827" /></div><div className="absolute bottom-2 right-2"><VintageCornerBR size={82} color="#111827" /></div>
+  {children}
+</div>;
+
+export const CertificateFrontPage: React.FC<CertificateDocumentProps> = ({ certificate, elementId = 'certificate-front-canvas', isCancelled = false }) => {
   const {
-    code = 'CERT-2026-000001',
-    studentName = 'NOME DO ALUNO',
-    studentDocument = '000.000.000-00',
-    courseName = 'Operador de Computador com IA',
-    courseSubhead = 'Operador de Computador com Inteligência Artificial',
-    workloadHours = 230,
-    startDate,
-    endDate,
-    issueDate,
-    location = 'Brasília-DF',
-    institutionName = 'Base Administrativa do Quartel-General do Exército – Forte Caxias',
-    institutionCnpj = '21.744.847/0001-50',
-    signatoryName = 'Carlos Henrique Ferreira De Mello',
-    signatoryRole = 'Diretor Geral',
-    signatoryCpf = '981.050.007-68',
-    signatureImageUrl,
-    customText,
+    code = '006/CVTE/2026', studentName = 'NOME DO ALUNO', studentDocument = '000.000.000-00', registrationNumber = '0000000000', cnhCategory = 'AD',
+    courseName = 'Curso Especializado para Condutores de Veículos de Transporte de Emergência', courseSubhead = 'Condutores de Veículos de Transporte de Emergência', workloadHours = 50,
+    startDate, endDate, issueDate, location = 'Brasília-DF', institutionName = 'Instituição de Ensino de Trânsito da Base Administrativa do Quartel-General do Exército – Forte Caxias', institutionCnpj = '21.744.847/0001-50',
+    legalInstruction = 'Instrução Nº 592, de 10 de agosto de 2020/Detran-DF', contranResolution = 'Resolução Nº 1.020/2025 do CONTRAN', validityText = 'validade de cinco anos após o término do curso',
+    signatoryName = 'Carlos Henrique Ferreira De Mello', signatoryRole = 'Diretor Geral', signatoryCpf = '981.050.007-68', signatureImageUrl,
   } = certificate;
 
-  const certificateText = customText || `${institutionName} certifica que ${studentName}, inscrito no CPF nº ${studentDocument}, concluiu com aproveitamento o curso ${courseName}, realizado no período de ${formatDateBR(startDate)} a ${formatDateBR(endDate)}, com carga horária total de ${workloadHours} horas, desenvolvendo competências em informática, produtividade digital e uso responsável de ferramentas de Inteligência Artificial.`;
-
-  return (
-    <div id={elementId} className="certificate-container relative bg-[#FAF9F5] select-none text-slate-900 overflow-hidden shadow-2xl font-serif" style={{ width: '1050px', height: '742px', minWidth: '1050px', minHeight: '742px', maxWidth: '1050px', maxHeight: '742px', boxSizing: 'border-box' }}>
-      <CertificateFrame isCancelled={isCancelled}>
-        <div className="relative z-10 grid grid-cols-12 items-start pt-2 px-3">
-          <div className="col-span-2 flex justify-start pl-2 pt-1"><SGExEmblem size={78} /></div>
-          <div className="col-span-8 flex flex-col items-center text-center">
-            <TopFiligree width={210} color="#111827" className="mb-0.5" />
-            <h1 className="text-[44px] leading-none font-serif font-black tracking-[0.16em] uppercase text-transparent bg-clip-text bg-gradient-to-b from-[#C2410C] via-[#D97706] to-[#9A3412]">CERTIFICADO</h1>
-            <div className="pt-2 font-sans font-black text-slate-900 text-[20px] leading-snug tracking-tight">{courseSubhead}</div>
-            <BottomFiligree width={330} color="#111827" className="mt-1" />
+  return <div id={elementId} className="certificate-container relative overflow-hidden bg-white text-slate-900 shadow-2xl font-serif" style={{ width: 1050, height: 742, minWidth: 1050, minHeight: 742 }}>
+    <Frame isCancelled={isCancelled}>
+      <div className="absolute inset-0 z-10 px-14 pt-10 pb-10 flex flex-col">
+        <div className="grid grid-cols-12 items-start">
+          <div className="col-span-2 flex justify-center pt-2"><SGExEmblem size={86} /></div>
+          <div className="col-span-8 text-center flex flex-col items-center">
+            <TopFiligree width={210} color="#111827" />
+            <h1 className="text-[42px] leading-none font-normal tracking-wide text-[#E9782A] mt-1">CERTIFICADO</h1>
+            <div className="mt-3 max-w-[410px] font-sans font-extrabold text-[18px] leading-[1.15]">{courseSubhead}</div>
+            <BottomFiligree width={280} color="#111827" className="mt-1" />
           </div>
-          <div className="col-span-2 flex flex-col items-end pr-2 pt-1"><BAdmQgexEmblem size={78} /><span className="pt-2 font-sans font-black text-[14px] tracking-wider">{code}</span></div>
+          <div className="col-span-2 flex flex-col items-center pt-2"><BAdmQgexEmblem size={86} /><div className="mt-3 font-sans text-[18px]"><Underline>{code}</Underline></div></div>
         </div>
 
-        <div className="relative z-10 px-12 my-auto text-center">
-          <p className="text-[16px] leading-[1.9] text-slate-900 text-justify font-serif">{certificateText}</p>
-          <p className="font-serif font-bold text-[15px] mt-6">{location}, {formatDateExtensoBR(issueDate)}</p>
+        <div className="mt-8 px-2 text-[17px] leading-[1.75] text-justify">
+          <p>
+            {institutionName} ({legalInstruction}) certifica que <Underline className="uppercase">{studentName}</Underline>, inscrito no CPF nº <Underline>{studentDocument}</Underline> e no Nº REGISTRO <Underline>{registrationNumber}</Underline>, categoria “<Underline>{cnhCategory}</Underline>”, concluiu com aproveitamento o <Underline>{courseName}</Underline>, ministrado pela IET - Forte Caxias, no período de <Underline>{formatPeriod(startDate, endDate)}</Underline>, com carga horária de <Underline>{workloadHours}h/a</Underline>, com {validityText}, conforme {contranResolution}.
+          </p>
         </div>
 
-        <div className="relative z-10 px-10 pb-3 grid grid-cols-12 items-end gap-4">
-          <div className="col-span-4 font-sans text-[10px] text-slate-600"><p className="font-bold text-slate-900">Código de autenticidade</p><p className="font-mono text-[12px] font-black mt-1">{code}</p><p className="mt-1">Consulte o código na área de validação do sistema.</p></div>
-          <div className="col-span-4 flex flex-col items-center text-center font-sans"><div className="h-12 flex items-center justify-center">{signatureImageUrl ? <img src={signatureImageUrl} alt={signatoryName} className="max-h-12 max-w-[190px] object-contain" /> : <MilitarySignatureGraphic width={170} />}</div><div className="w-56 border-t border-slate-800 mt-1 pt-1"><p className="text-[11px] font-bold">{signatoryName}</p><p className="text-[10px]">{signatoryRole}</p>{signatoryCpf && <p className="text-[9px]">CPF: {signatoryCpf}</p>}</div></div>
-          <div className="col-span-4 text-right font-sans"><p className="text-[11px] font-bold">CNPJ Nº {institutionCnpj}</p><p className="text-[10px] font-bold uppercase tracking-wide">BASE ADMINISTRATIVA DO QUARTEL-GENERAL DO EXÉRCITO</p><p className="text-[10px] uppercase">FORTE CAXIAS</p></div>
+        <div className="mt-7 text-center text-[17px] font-bold"><Underline>{location}, {formatDateExtenso(issueDate)}</Underline></div>
+
+        <div className="mt-auto grid grid-cols-12 items-end px-5 pb-1">
+          <div className="col-span-4 text-center font-sans">
+            <div className="h-48px flex items-center justify-center">{signatureImageUrl ? <img src={signatureImageUrl} alt={signatoryName} className="max-h-14 max-w-[200px] object-contain" /> : <MilitarySignatureGraphic width={170} />}</div>
+            <div className="mx-auto w-56 border-t border-slate-900 pt-1"><p className="text-[11px] font-bold">{signatoryName}</p><p className="text-[10px] font-bold">{signatoryRole}</p>{signatoryCpf && <p className="text-[10px] font-bold">{signatoryCpf}</p>}</div>
+          </div>
+          <div className="col-span-4" />
+          <div className="col-span-4 text-center font-sans text-[10px] font-bold leading-snug"><p>CNPJ Nº {institutionCnpj}</p><p>BASE ADMINISTRATIVA DO QUARTEL-GENERAL DO EXÉRCITO</p></div>
         </div>
-      </CertificateFrame>
-    </div>
-  );
+      </div>
+    </Frame>
+  </div>;
 };
 
 export const CertificateBackPage: React.FC<CertificateDocumentProps> = ({ certificate, elementId = 'certificate-back-canvas', isCancelled = false }) => {
-  const { code = 'CERT-2026-000001', syllabus = DEFAULT_AI_SYLLABUS } = certificate;
-  const activeSyllabus: SyllabusItem[] = syllabus?.length ? syllabus : DEFAULT_AI_SYLLABUS;
-  return (
-    <div id={elementId} className="certificate-container relative bg-[#FAF9F5] select-none text-slate-900 overflow-hidden shadow-2xl font-serif" style={{ width: '1050px', height: '742px', minWidth: '1050px', minHeight: '742px', maxWidth: '1050px', maxHeight: '742px', boxSizing: 'border-box' }}>
-      <CertificateFrame isCancelled={isCancelled}>
-        <div className="relative z-10 grid grid-cols-12 items-center pt-2 px-3"><div className="col-span-2 flex justify-start pl-2"><SGExEmblem size={70} /></div><div className="col-span-8 text-center font-sans"><h2 className="text-[21px] font-black uppercase text-slate-950">BASE ADMINISTRATIVA DO QUARTEL-GENERAL DO EXÉRCITO</h2><h3 className="text-[20px] font-black uppercase text-slate-950 mt-1">“FORTE CAXIAS”</h3><p className="mt-2 text-[16px] font-bold uppercase tracking-[0.12em]">OPERADOR DE COMPUTADOR COM IA</p></div><div className="col-span-2 flex justify-end pr-2"><BAdmQgexEmblem size={70} /></div></div>
-        <div className="relative z-10 px-10 pt-3 flex items-center justify-between font-sans"><span className="font-black text-[15px] tracking-[0.14em] uppercase">CONTEÚDO PROGRAMÁTICO</span><span className="font-black text-[14px]">{code}</span></div>
-        <div className="relative z-10 px-10 my-auto font-sans"><table className="w-full border-collapse border-2 border-slate-950 bg-slate-50/70"><thead><tr className="bg-[#E2E8F0] border-b-2 border-slate-950"><th className="border-r-2 border-slate-950 py-3 px-4 text-center text-[12px] font-black uppercase w-[38%]">COMPONENTE / DISCIPLINA</th><th className="border-r-2 border-slate-950 py-3 px-4 text-center text-[12px] font-black uppercase w-[18%]">CARGA HORÁRIA</th><th className="border-r-2 border-slate-950 py-3 px-4 text-center text-[12px] font-black uppercase w-[16%]">AVALIAÇÃO</th><th className="py-3 px-4 text-center text-[12px] font-black uppercase w-[28%]">INSTRUTOR</th></tr></thead><tbody>{activeSyllabus.map((row, idx) => <tr key={idx} className={idx % 2 === 0 ? 'bg-[#F8FAFC]' : 'bg-[#EEF2F7]'}><td className="border-r-2 border-t border-slate-950 py-3 px-4 text-center font-bold text-[12px]">{row.discipline}</td><td className="border-r-2 border-t border-slate-950 py-3 px-4 text-center font-bold text-[12px]">{row.workload}</td><td className="border-r-2 border-t border-slate-950 py-3 px-4 text-center font-black text-[12px]">{row.grade}</td><td className="border-t border-slate-950 py-3 px-4 text-center font-bold text-[11px] uppercase">{row.instructor}</td></tr>)}</tbody></table></div>
-        <div className="relative z-10 px-10 pb-4 text-center font-sans text-[10px] text-slate-600">Formação em informática, produtividade digital, Inteligência Artificial, engenharia de prompts, segurança digital e uso ético da tecnologia.</div>
-      </CertificateFrame>
-    </div>
-  );
+  const { code = '006/CVTE/2026', syllabus = DEFAULT_CVTE_SYLLABUS } = certificate;
+  const rows: SyllabusItem[] = syllabus?.length ? syllabus : DEFAULT_CVTE_SYLLABUS;
+  return <div id={elementId} className="certificate-container relative overflow-hidden bg-white text-slate-900 shadow-2xl font-serif" style={{ width: 1050, height: 742, minWidth: 1050, minHeight: 742 }}>
+    <Frame isCancelled={isCancelled}>
+      <div className="absolute inset-0 z-10 px-14 py-12 flex flex-col">
+        <div className="grid grid-cols-12 items-center"><div className="col-span-2 flex justify-center"><SGExEmblem size={72} /></div><div className="col-span-8 text-center font-sans"><h2 className="text-[20px] font-black uppercase">Base Administrativa do Quartel-General do Exército</h2><p className="mt-2 text-[17px] font-extrabold uppercase">Curso Especializado para Condutores de Veículos de Transporte de Emergência</p></div><div className="col-span-2 flex justify-center"><BAdmQgexEmblem size={72} /></div></div>
+        <div className="mt-6 flex items-center justify-between font-sans"><h3 className="font-black text-[16px] uppercase tracking-wide">Conteúdo Programático</h3><Underline>{code}</Underline></div>
+        <div className="mt-5"><table className="w-full border-collapse border-2 border-slate-900 font-sans"><thead><tr className="bg-slate-200"><th className="border border-slate-900 p-3 text-[12px]">DISCIPLINA</th><th className="border border-slate-900 p-3 text-[12px]">CARGA HORÁRIA</th><th className="border border-slate-900 p-3 text-[12px]">AVALIAÇÃO</th><th className="border border-slate-900 p-3 text-[12px]">INSTRUTOR</th></tr></thead><tbody>{rows.map((row, i) => <tr key={i}><td className="border border-slate-900 p-3 text-[12px] font-bold">{row.discipline}</td><td className="border border-slate-900 p-3 text-[12px] text-center font-bold">{row.workload}</td><td className="border border-slate-900 p-3 text-[12px] text-center font-bold">{row.grade}</td><td className="border border-slate-900 p-3 text-[11px] text-center font-bold">{row.instructor}</td></tr>)}</tbody></table></div>
+        <div className="mt-auto text-center font-sans text-[11px]">Instituição de Ensino de Trânsito • Base Administrativa do Quartel-General do Exército – Forte Caxias</div>
+      </div>
+    </Frame>
+  </div>;
 };
 
-export const CertificateDocument: React.FC<CertificateDocumentProps> = (props) =>
-  props.page === 'back' ? <CertificateBackPage {...props} /> : <CertificateFrontPage {...props} />;
+export const CertificateDocument: React.FC<CertificateDocumentProps> = (props) => props.page === 'back' ? <CertificateBackPage {...props} /> : <CertificateFrontPage {...props} />;

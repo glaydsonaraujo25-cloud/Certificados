@@ -9,13 +9,7 @@ import { ArrowLeft, ArrowRight, CheckCircle, Eye, FileText, Layers, Loader2, Plu
 
 const onlyDigits = (value: string, maxLength = 11) => value.replace(/\D/g, '').slice(0, maxLength);
 
-const isValidCpf = (value: string) => {
-  const cpf = value.replace(/\D/g, '');
-  if (cpf.length !== 11) return false;
-  if (/^(\d)\1{10}$/.test(cpf)) return false;
-  const calc = (length: number) => { let sum = 0; for (let i = 0; i < length; i++) sum += Number(cpf[i]) * (length + 1 - i); const digit = (sum * 10) % 11; return digit === 10 ? 0 : digit; };
-  return calc(9) === Number(cpf[9]) && calc(10) === Number(cpf[10]);
-};
+const isValidCpf = (value: string) => onlyDigits(value).length === 11;
 
 export const CreateCertificateView: React.FC = () => {
   const { courses, students, certificates, institution, issueCertificate, setCurrentView, setValidationSearchCode } = useApp();
@@ -64,7 +58,7 @@ export const CreateCertificateView: React.FC = () => {
   const validate = () => {
     if (!studentName.trim()) return alert('Informe o nome completo do aluno.'), false;
     if (studentDocument.length !== 11) return alert('O CPF deve conter exatamente 11 dígitos.'), false;
-    if (!isValidCpf(studentDocument)) return alert('O CPF informado é inválido.'), false;
+    if (!isValidCpf(studentDocument)) return alert('O CPF deve conter exatamente 11 dígitos.'), false;
     if (registrationNumber.length !== 11) return alert('O Nº REGISTRO do condutor deve conter exatamente 11 dígitos.'), false;
     if (!cnhCategory.trim()) return alert('Informe a categoria da CNH.'), false;
     if (studentEmail.trim() && !/^\S+@\S+\.\S+$/.test(studentEmail.trim())) return alert('Informe um e-mail válido.'), false;

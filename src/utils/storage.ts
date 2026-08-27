@@ -11,7 +11,7 @@ export const TEMPLATE_PRESETS: TemplatePreset[] = [
   {
     id: 'official',
     name: 'Modelo Oficial Padronizado',
-    description: 'Padrão único e oficial da instituição com brasões, bordas institucionais, QR Code, código de autenticidade e assinatura.',
+    description: 'Padrão único e oficial da instituição com brasões, bordas institucionais, código de autenticidade e assinatura.',
     badge: 'Modelo Oficial',
     defaultTheme: {
       primaryColor: '#1E293B',
@@ -20,7 +20,6 @@ export const TEMPLATE_PRESETS: TemplatePreset[] = [
       fontFamily: 'serif',
       borderStyle: 'double',
       backgroundPattern: 'subtle',
-      showQrCode: true,
       showSignatoryTitle: true,
       showSeal: true,
     },
@@ -35,7 +34,6 @@ export const DEFAULT_AI_SYLLABUS = [
   { discipline: 'Segurança Digital, Ética e Boas Práticas com IA', workload: '30h/a', grade: '10', instructor: 'INSTRUTOR RESPONSÁVEL' },
 ];
 
-// Mantido como alias para compatibilidade com componentes antigos.
 export const DEFAULT_CVTE_SYLLABUS = DEFAULT_AI_SYLLABUS;
 
 export const INITIAL_INSTITUTION: InstitutionSettings = {
@@ -57,7 +55,6 @@ export const INITIAL_INSTITUTION: InstitutionSettings = {
   showSecondSignature: false,
   borderStyle: 'official-security',
   codeFormat: 'sequential',
-  showQrCode: true,
   showSeal: true,
   sealText: 'DOCUMENTO AUTÊNTICO • FORTE CAXIAS',
   legalInstruction: '',
@@ -93,13 +90,11 @@ export function interpolateCertificateText(
   } = {}
 ): string {
   let text = templateText || INITIAL_INSTITUTION.defaultCertificateText || '';
-
   const formatDateBR = (isoDate?: string) => {
     if (!isoDate) return '';
     const parts = isoDate.split('-');
     return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : isoDate;
   };
-
   const formatDateExtensoBR = (isoDate?: string) => {
     if (!isoDate) return '';
     const parts = isoDate.split('-');
@@ -107,7 +102,6 @@ export function interpolateCertificateText(
     const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
     return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
   };
-
   const startFormatted = formatDateBR(vars.startDate);
   const endFormatted = formatDateBR(vars.endDate);
   const issueFormatted = formatDateExtensoBR(vars.issueDate);
@@ -158,7 +152,6 @@ export const INITIAL_COURSES: Course[] = [
   },
 ];
 
-// O sistema inicia sem alunos, certificados ou registros fictícios.
 export const INITIAL_STUDENTS: Student[] = [];
 export const INITIAL_CERTIFICATES: Certificate[] = [];
 export const INITIAL_AUDIT_LOGS: AuditLog[] = [];

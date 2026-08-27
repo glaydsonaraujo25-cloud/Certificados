@@ -6,6 +6,7 @@ import { CertificatesView } from './views/CertificatesView';
 import { CreateCertificateView } from './views/CreateCertificateView';
 import { BatchEmissionView } from './views/BatchEmissionView';
 import { CoursesView } from './views/CoursesView';
+import { ClassesView } from './views/ClassesView';
 import { StudentsView } from './views/StudentsView';
 import { ValidateCertificateView } from './views/ValidateCertificateView';
 import { SettingsView } from './views/SettingsView';
@@ -26,6 +27,7 @@ const MainRouter: React.FC = () => {
       case 'create-certificate': return <CreateCertificateView />;
       case 'batch-emission': return <BatchEmissionView />;
       case 'courses': return <CoursesView />;
+      case 'classes': return <ClassesView />;
       case 'students': return <StudentsView />;
       case 'validate': return <ValidateCertificateView />;
       case 'api': return <ApiManagementView />;
@@ -46,9 +48,6 @@ export default function App() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-
-    // Migração única: remove somente alunos, certificados e auditoria fictícios
-    // que podiam ter sido gravados por versões anteriores do aplicativo.
     if (!localStorage.getItem(DATA_RESET_MARKER)) {
       localStorage.removeItem('certifyai_students');
       localStorage.removeItem('certifyai_certificates');
@@ -56,15 +55,10 @@ export default function App() {
       sessionStorage.removeItem('certifyai_prefill_student');
       localStorage.setItem(DATA_RESET_MARKER, 'done');
     }
-
     setStorageReady(true);
   }, []);
 
   if (!storageReady) return null;
 
-  return (
-    <AppProvider>
-      <MainRouter />
-    </AppProvider>
-  );
+  return <AppProvider><MainRouter /></AppProvider>;
 }

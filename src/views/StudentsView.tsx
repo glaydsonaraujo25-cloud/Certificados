@@ -3,6 +3,21 @@ import { useApp } from '../context/AppContext';
 import { Student } from '../types';
 import { AlertTriangle, Award, Edit2, PlusCircle, Search, Trash2, X } from 'lucide-react';
 
+const digitsOnly = (value: string) => value.replace(/\D/g, '');
+
+const isValidCpf = (value: string) => {
+  const cpf = digitsOnly(value);
+  if (cpf.length !== 11) return true;
+  if (/^(\d)\1{10}$/.test(cpf)) return false;
+  const calc = (length: number) => {
+    let sum = 0;
+    for (let i = 0; i < length; i++) sum += Number(cpf[i]) * (length + 1 - i);
+    const digit = (sum * 10) % 11;
+    return digit === 10 ? 0 : digit;
+  };
+  return calc(9) === Number(cpf[9]) && calc(10) === Number(cpf[10]);
+};
+
 export const StudentsView: React.FC = () => {
   const { students, courses, addStudent, updateStudent, deleteStudent, certificates, setCurrentView } = useApp();
   const [searchTerm, setSearchTerm] = useState('');
@@ -11,6 +26,7 @@ export const StudentsView: React.FC = () => {
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [studentToDelete, setStudentToDelete] = useState<Student | null>(null);
   const [feedback, setFeedback] = useState('');
+  const [formError, setFormError] = useState('');
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [documentNumber, setDocumentNumber] = useState('');
@@ -24,19 +40,37 @@ export const StudentsView: React.FC = () => {
   });
 
   const showFeedback = (message: string) => { setFeedback(message); window.setTimeout(() => setFeedback(''), 3000); };
-  const resetForm = () => { setFullName(''); setEmail(''); setDocumentNumber(''); setCourseId(courses[0]?.id || ''); setCompletionDate(new Date().toISOString().split('T')[0]); setNotes(''); };
+  const resetForm = () => { setFullName(''); setEmail(''); setDocumentNumber(''); setCourseId(courses[0]?.id || ''); setCompletionDate(new Date().toISOString().split('T')[0]); setNotes(''); setFormError(''); };
   const openCreate = () => { setEditingStudent(null); resetForm(); setIsModalOpen(true); };
-  const openEdit = (student: Student) => { setEditingStudent(student); setFullName(student.fullName); setEmail(student.email); setDocumentNumber(student.documentNumber || ''); setCourseId(student.courseId || ''); setCompletionDate(student.completionDate || ''); setNotes(student.notes || ''); setIsModalOpen(true); };
+  const openEdit = (student: Student) => { setEditingStudent(student); setFullName(student.fullName); setEmail(student.email); setDocumentNumber(student.documentNumber || ''); setCourseId(student.courseId || ''); setCompletionDate(student.completionDate || ''); setNotes(student.notes || ''); setFormError(''); setIsModalOpen(true); };
   const openEmission = (student: Student) => {
     sessionStorage.setItem('certifyai_prefill_student', student.id);
     if (student.courseId) sessionStorage.setItem('certifyai_prefill_course', student.courseId);
     setCurrentView('create-certificate');
   };
 
+  const validateStudent = () => {
+    if (!fullName.trim()) return 'Informe o nome completo do aluno.';
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) return 'Informe um e-mail válido.';
+    if (students.some((student) => student.id !== editingStudent?.id && student.email.trim().toLowerCase() === cleanEmail)) return 'Já existe um aluno cadastrado com este e-mail.';
+    if (documentNumber.trim()) {
+      const doc = digitsOnly(documentNumber);
+      if (!isValidCpf(documentNumber)) return 'O CPF informado é inválido.';
+      if (students.some((student) => student.id !== editingStudent?.id && digitsOnly(student.documentNumber || '') === doc && doc.length > 0)) return 'Já existe um aluno cadastrado com este CPF/documento.';
+    }
+    if (completionDate && courseId) {
+      const course = courses.find((item) => item.id === courseId);
+      if (course?.startDate && completionDate < course.startDate) return 'A data de conclusão não pode ser anterior ao início do curso.';
+    }
+    return '';
+  };
+
   const save = (event: React.FormEvent) => {
     event.preventDefault();
-    if (!fullName.trim() || !email.trim()) return;
-    const payload = { fullName: fullName.trim().toUpperCase(), email: email.trim(), documentNumber: documentNumber.trim(), courseId, completionDate, notes: notes.trim(), registrationNumber: undefined, cnhCategory: undefined };
+    const error = validateStudent();
+    if (error) { setFormError(error); return; }
+    const payload = { fullName: fullName.trim().toUpperCase(), email: email.trim().toLowerCase(), documentNumber: documentNumber.trim(), courseId, completionDate, notes: notes.trim(), registrationNumber: undefined, cnhCategory: undefined };
     if (editingStudent) { updateStudent(editingStudent.id, payload); showFeedback('Aluno atualizado com sucesso.'); }
     else { addStudent(payload); showFeedback('Aluno cadastrado com sucesso.'); }
     setIsModalOpen(false);
@@ -71,7 +105,7 @@ export const StudentsView: React.FC = () => {
         </table></div>
       </div>
 
-      {isModalOpen && <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4"><div className="bg-white dark:bg-slate-900 rounded-2xl p-6 max-w-lg w-full border border-slate-200 dark:border-slate-800 shadow-2xl max-h-[90vh] overflow-y-auto"><div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800"><h3 className="font-bold text-lg">{editingStudent ? 'Editar Aluno' : 'Novo Aluno'}</h3><button onClick={() => setIsModalOpen(false)}><X className="w-5 h-5" /></button></div><form onSubmit={save} className="space-y-3 mt-4"><label className="block text-xs font-semibold">Nome Completo *<input value={fullName} onChange={(e) => setFullName(e.target.value)} required className="mt-1 w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" /></label><label className="block text-xs font-semibold">E-mail *<input value={email} onChange={(e) => setEmail(e.target.value)} type="email" required className="mt-1 w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" /></label><label className="block text-xs font-semibold">CPF / Documento<input value={documentNumber} onChange={(e) => setDocumentNumber(e.target.value)} className="mt-1 w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" /></label><label className="block text-xs font-semibold">Curso<select value={courseId} onChange={(e) => setCourseId(e.target.value)} className="mt-1 w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"><option value="">Sem vínculo</option>{courses.map((course) => <option key={course.id} value={course.id}>{course.name}</option>)}</select></label><label className="block text-xs font-semibold">Data de Conclusão<input type="date" value={completionDate} onChange={(e) => setCompletionDate(e.target.value)} className="mt-1 w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" /></label><label className="block text-xs font-semibold">Observações<textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="mt-1 w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" /></label><div className="flex justify-end gap-2 pt-3"><button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-semibold">Cancelar</button><button type="submit" className="px-5 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold">{editingStudent ? 'Salvar Alterações' : 'Cadastrar Aluno'}</button></div></form></div></div>}
+      {isModalOpen && <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4"><div className="bg-white dark:bg-slate-900 rounded-2xl p-6 max-w-lg w-full border border-slate-200 dark:border-slate-800 shadow-2xl max-h-[90vh] overflow-y-auto"><div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800"><h3 className="font-bold text-lg">{editingStudent ? 'Editar Aluno' : 'Novo Aluno'}</h3><button onClick={() => setIsModalOpen(false)}><X className="w-5 h-5" /></button></div><form onSubmit={save} className="space-y-3 mt-4">{formError && <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 dark:border-rose-900 dark:bg-rose-950/50 dark:text-rose-300">{formError}</div>}<label className="block text-xs font-semibold">Nome Completo *<input value={fullName} onChange={(e) => setFullName(e.target.value)} required className="mt-1 w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" /></label><label className="block text-xs font-semibold">E-mail *<input value={email} onChange={(e) => setEmail(e.target.value)} type="email" required className="mt-1 w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" /></label><label className="block text-xs font-semibold">CPF / Documento<input value={documentNumber} onChange={(e) => setDocumentNumber(e.target.value)} className="mt-1 w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" /></label><label className="block text-xs font-semibold">Curso<select value={courseId} onChange={(e) => setCourseId(e.target.value)} className="mt-1 w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"><option value="">Sem vínculo</option>{courses.map((course) => <option key={course.id} value={course.id}>{course.name}</option>)}</select></label><label className="block text-xs font-semibold">Data de Conclusão<input type="date" value={completionDate} onChange={(e) => setCompletionDate(e.target.value)} className="mt-1 w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" /></label><label className="block text-xs font-semibold">Observações<textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="mt-1 w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" /></label><div className="flex justify-end gap-2 pt-3"><button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-semibold">Cancelar</button><button type="submit" className="px-5 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold">{editingStudent ? 'Salvar Alterações' : 'Cadastrar Aluno'}</button></div></form></div></div>}
 
       {studentToDelete && <div className="fixed inset-0 z-[60] bg-slate-900/70 flex items-center justify-center p-4"><div className="w-full max-w-md rounded-2xl bg-white dark:bg-slate-900 p-6"><div className="flex gap-3"><div className="w-10 h-10 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center"><AlertTriangle className="w-5 h-5" /></div><div><h3 className="font-extrabold">Excluir aluno?</h3><p className="mt-1 text-sm text-slate-500">O cadastro de <strong>{studentToDelete.fullName}</strong> será removido. Certificados já emitidos serão preservados.</p></div></div><div className="mt-6 flex justify-end gap-2"><button onClick={() => setStudentToDelete(null)} className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-sm font-semibold">Cancelar</button><button onClick={confirmDelete} className="px-4 py-2 rounded-xl bg-rose-600 text-white text-sm font-bold">Excluir aluno</button></div></div></div>}
     </div>

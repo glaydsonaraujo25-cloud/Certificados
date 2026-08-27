@@ -77,9 +77,23 @@ export interface Student {
   registrationNumber?: string;
   cnhCategory?: string;
   courseId?: string;
+  classId?: string;
   completionDate?: string;
   notes?: string;
   createdAt: string;
+}
+
+export interface CourseClass {
+  id: string;
+  name: string;
+  courseId: string;
+  startDate: string;
+  endDate: string;
+  instructorName: string;
+  studentIds: string[];
+  notes?: string;
+  createdAt: string;
+  updatedAt?: string;
 }
 
 export interface CertificateThemeSettings {

@@ -6,9 +6,7 @@ import { CertificatesView } from './views/CertificatesView';
 import { CreateCertificateView } from './views/CreateCertificateView';
 import { BatchEmissionView } from './views/BatchEmissionView';
 import { CoursesView } from './views/CoursesView';
-import { ClassesView } from './views/ClassesView';
 import { StudentsView } from './views/StudentsView';
-import { ImportStudentsView } from './views/ImportStudentsView';
 import { ValidateCertificateView } from './views/ValidateCertificateView';
 import { SettingsView } from './views/SettingsView';
 import { ApiManagementView } from './views/ApiManagementView';
@@ -28,9 +26,7 @@ const MainRouter: React.FC = () => {
       case 'create-certificate': return <CreateCertificateView />;
       case 'batch-emission': return <BatchEmissionView />;
       case 'courses': return <CoursesView />;
-      case 'classes': return <ClassesView />;
       case 'students': return <StudentsView />;
-      case 'import-students': return <ImportStudentsView />;
       case 'validate': return <ValidateCertificateView />;
       case 'api': return <ApiManagementView />;
       case 'audit': return <AuditView />;
@@ -46,10 +42,8 @@ const MainRouter: React.FC = () => {
 
 export default function App() {
   const [storageReady, setStorageReady] = useState(false);
-
   useEffect(() => {
     if (typeof window === 'undefined') return;
-
     if (!localStorage.getItem(DATA_RESET_MARKER)) {
       localStorage.removeItem('certifyai_students');
       localStorage.removeItem('certifyai_certificates');
@@ -57,9 +51,6 @@ export default function App() {
       sessionStorage.removeItem('certifyai_prefill_student');
       localStorage.setItem(DATA_RESET_MARKER, 'done');
     }
-
-    // Mudança de curso: força apenas uma vez a nova configuração padrão CVTE.
-    // Alunos e certificados reais são preservados.
     if (!localStorage.getItem(CVTE_SWITCH_MARKER)) {
       localStorage.removeItem('certifyai_institution');
       localStorage.removeItem('certifyai_courses');
@@ -68,10 +59,8 @@ export default function App() {
       sessionStorage.removeItem('certifyai_prefill_course');
       localStorage.setItem(CVTE_SWITCH_MARKER, 'done');
     }
-
     setStorageReady(true);
   }, []);
-
   if (!storageReady) return null;
   return <AppProvider><MainRouter /></AppProvider>;
 }

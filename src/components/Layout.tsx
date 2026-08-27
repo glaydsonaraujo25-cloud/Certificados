@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { LayoutDashboard, Award, PlusCircle, BookOpen, Users, Layers, CheckCircle, Settings, Server, Sun, Moon, Menu, X, History, DatabaseBackup, FileBarChart, Search, FileSpreadsheet } from 'lucide-react';
+import { LayoutDashboard, Award, PlusCircle, BookOpen, Users, Layers, CheckCircle, Settings, Server, Sun, Moon, Menu, X, History, DatabaseBackup, FileBarChart, Search } from 'lucide-react';
 
 interface LayoutProps { children: React.ReactNode; }
 
@@ -14,9 +14,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     { id: 'create-certificate', label: 'Emitir Certificado', icon: PlusCircle, highlight: true },
     { id: 'certificates', label: 'Certificados', icon: Award },
     { id: 'students', label: 'Alunos', icon: Users },
-    { id: 'import-students', label: 'Importar Alunos', icon: FileSpreadsheet },
     { id: 'courses', label: 'Cursos', icon: BookOpen },
-    { id: 'classes', label: 'Turmas', icon: Users },
     { id: 'batch-emission', label: 'Emissão em Lote', icon: Layers },
     { id: 'validate', label: 'Validar', icon: CheckCircle },
     { id: 'reports', label: 'Relatórios', icon: FileBarChart },
@@ -59,11 +57,8 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   return <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col md:flex-row transition-colors">
     <header className="md:hidden flex items-center justify-between px-4 py-3 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-40"><div className="flex items-center gap-2.5"><div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white"><Award className="w-5 h-5" /></div><div><span className="font-bold text-base">CertifyAI</span><span className="text-[10px] block text-indigo-600 -mt-1">Certificados Digitais</span></div></div><div className="flex gap-2"><button onClick={toggleTheme} className="p-2">{theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}</button><button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="p-2">{mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}</button></div></header>
-
     <aside className="hidden md:flex flex-col w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 shrink-0 justify-between h-screen sticky top-0"><div className="min-h-0"><div className="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3"><div className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center text-white"><Award className="w-5 h-5" /></div><div className="min-w-0"><h1 className="font-extrabold text-lg">Certify<span className="text-indigo-600">AI</span></h1><p className="text-xs text-slate-500 truncate max-w-[150px]">{institution.name || 'Instituição'}</p></div></div><div className="pt-3"><QuickSearch /></div><Navigation /></div><div className="p-3 border-t border-slate-100 dark:border-slate-800 space-y-2"><div className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800 text-xs"><div className="flex justify-between mb-2"><span>Perfil</span><strong>{user?.role === 'admin' ? 'Administrador' : 'Instrutor'}</strong></div><button onClick={() => switchUserRole(user?.role === 'admin' ? 'instructor' : 'admin')} className="w-full py-1.5 rounded bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600">Alternar perfil</button></div></div></aside>
-
     {mobileMenuOpen && <div className="md:hidden fixed inset-0 z-50 bg-slate-900/60 flex"><div className="w-80 bg-white dark:bg-slate-900 h-full p-4 shadow-2xl"><div className="flex justify-between items-center pb-3"><strong>CertifyAI</strong><button onClick={() => setMobileMenuOpen(false)}><X className="w-5 h-5" /></button></div><QuickSearch /><Navigation mobile /></div><div className="flex-1" onClick={() => setMobileMenuOpen(false)} /></div>}
-
     <main className="flex-1 min-w-0 flex flex-col min-h-screen overflow-y-auto">{children}</main>
   </div>;
 };

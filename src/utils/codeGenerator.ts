@@ -20,9 +20,7 @@ export function generateCertificateCode(
     courseCodes.forEach((code) => {
       const parts = code.split('/');
       const numPart = parseInt(parts[0], 10);
-      if (!Number.isNaN(numPart) && numPart >= nextNumber) {
-        nextNumber = numPart + 1;
-      }
+      if (!Number.isNaN(numPart) && numPart >= nextNumber) nextNumber = numPart + 1;
     });
 
     let code = `${String(nextNumber).padStart(3, '0')}${yearSuffix}`;
@@ -40,9 +38,7 @@ export function generateCertificateCode(
 
     yearCodes.forEach((code) => {
       const numPart = parseInt(code.replace(yearPrefix, ''), 10);
-      if (!Number.isNaN(numPart) && numPart >= nextNumber) {
-        nextNumber = numPart + 1;
-      }
+      if (!Number.isNaN(numPart) && numPart >= nextNumber) nextNumber = numPart + 1;
     });
 
     let seqCode = `${yearPrefix}${String(nextNumber).padStart(6, '0')}`;
@@ -56,22 +52,12 @@ export function generateCertificateCode(
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let code = '';
   let attempts = 0;
-
   do {
     let randomPart = '';
-    for (let i = 0; i < 6; i += 1) {
-      randomPart += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
+    for (let i = 0; i < 6; i += 1) randomPart += chars.charAt(Math.floor(Math.random() * chars.length));
     code = `CERT-${year}-${randomPart}`;
     attempts += 1;
   } while (existingCodes.includes(code) && attempts < 100);
 
   return code;
-}
-
-export function formatVerificationUrl(code: string): string {
-  if (typeof window !== 'undefined') {
-    return `${window.location.origin}/verificar/${encodeURIComponent(code)}`;
-  }
-  return `https://certify.academy/verificar/${encodeURIComponent(code)}`;
 }

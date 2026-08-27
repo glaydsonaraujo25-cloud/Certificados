@@ -14,6 +14,12 @@ interface CertificateDocumentProps {
   page?: 'front' | 'back';
 }
 
+const formatCpf = (value?: string) => {
+  const digits = (value || '').replace(/\D/g, '').slice(0, 11);
+  if (digits.length !== 11) return value || '';
+  return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9, 11)}`;
+};
+
 const formatDateExtenso = (iso?: string) => {
   if (!iso) return '';
   const p = iso.split('-');
@@ -48,6 +54,8 @@ export const CertificateFrontPage: React.FC<CertificateDocumentProps> = ({ certi
     signatoryName = 'Carlos Henrique Ferreira De Mello', signatoryRole = 'Diretor Geral', signatoryCpf = '981.050.007-68', signatureImageUrl,
   } = certificate;
 
+  const formattedStudentCpf = formatCpf(studentDocument);
+
   return <div id={elementId} className="certificate-container relative overflow-hidden bg-white text-slate-900 shadow-2xl font-serif" style={{ width: 1050, height: 742, minWidth: 1050, minHeight: 742 }}>
     <Frame isCancelled={isCancelled}>
       <div className="absolute inset-0 z-10 px-14 pt-10 pb-10 flex flex-col">
@@ -64,7 +72,7 @@ export const CertificateFrontPage: React.FC<CertificateDocumentProps> = ({ certi
 
         <div className="mt-8 px-2 text-[17px] leading-[1.75] text-justify">
           <p>
-            {institutionName} ({legalInstruction}) certifica que <Underline className="uppercase">{studentName}</Underline>, inscrito no CPF nº <Underline>{studentDocument}</Underline> e no Nº REGISTRO <Underline>{registrationNumber}</Underline>, categoria “<Underline>{cnhCategory}</Underline>”, concluiu com aproveitamento o <Underline>{courseName}</Underline>, ministrado pela IET - Forte Caxias, no período de <Underline>{formatPeriod(startDate, endDate)}</Underline>, com carga horária de <Underline>{workloadHours}h/a</Underline>, com {validityText}, conforme {contranResolution}.
+            {institutionName} ({legalInstruction}) certifica que <Underline className="uppercase">{studentName}</Underline>, inscrito no CPF nº <Underline>{formattedStudentCpf}</Underline> e no Nº REGISTRO <Underline>{registrationNumber}</Underline>, categoria “<Underline>{cnhCategory}</Underline>”, concluiu com aproveitamento o <Underline>{courseName}</Underline>, ministrado pela IET - Forte Caxias, no período de <Underline>{formatPeriod(startDate, endDate)}</Underline>, com carga horária de <Underline>{workloadHours}h/a</Underline>, com {validityText}, conforme {contranResolution}.
           </p>
         </div>
 

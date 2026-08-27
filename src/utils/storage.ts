@@ -6,7 +6,6 @@ import {
   TemplatePreset,
   AuditLog,
 } from '../types';
-import { calculateCertificateHash } from './integrity';
 
 export const TEMPLATE_PRESETS: TemplatePreset[] = [
   {
@@ -29,36 +28,11 @@ export const TEMPLATE_PRESETS: TemplatePreset[] = [
 ];
 
 export const DEFAULT_AI_SYLLABUS = [
-  {
-    discipline: 'Informática Básica e Sistemas Operacionais',
-    workload: '40h/a',
-    grade: '10',
-    instructor: 'INSTRUTOR RESPONSÁVEL',
-  },
-  {
-    discipline: 'Ferramentas de Escritório e Produtividade',
-    workload: '60h/a',
-    grade: '10',
-    instructor: 'INSTRUTOR RESPONSÁVEL',
-  },
-  {
-    discipline: 'Inteligência Artificial Aplicada ao Escritório',
-    workload: '60h/a',
-    grade: '10',
-    instructor: 'INSTRUTOR RESPONSÁVEL',
-  },
-  {
-    discipline: 'Engenharia de Prompts e IA Generativa',
-    workload: '40h/a',
-    grade: '10',
-    instructor: 'INSTRUTOR RESPONSÁVEL',
-  },
-  {
-    discipline: 'Segurança Digital, Ética e Boas Práticas com IA',
-    workload: '30h/a',
-    grade: '10',
-    instructor: 'INSTRUTOR RESPONSÁVEL',
-  },
+  { discipline: 'Informática Básica e Sistemas Operacionais', workload: '40h/a', grade: '10', instructor: 'INSTRUTOR RESPONSÁVEL' },
+  { discipline: 'Ferramentas de Escritório e Produtividade', workload: '60h/a', grade: '10', instructor: 'INSTRUTOR RESPONSÁVEL' },
+  { discipline: 'Inteligência Artificial Aplicada ao Escritório', workload: '60h/a', grade: '10', instructor: 'INSTRUTOR RESPONSÁVEL' },
+  { discipline: 'Engenharia de Prompts e IA Generativa', workload: '40h/a', grade: '10', instructor: 'INSTRUTOR RESPONSÁVEL' },
+  { discipline: 'Segurança Digital, Ética e Boas Práticas com IA', workload: '30h/a', grade: '10', instructor: 'INSTRUTOR RESPONSÁVEL' },
 ];
 
 // Mantido como alias para compatibilidade com componentes antigos.
@@ -90,8 +64,7 @@ export const INITIAL_INSTITUTION: InstitutionSettings = {
   contranResolution: '',
   validityText: 'certificação referente à conclusão e ao aproveitamento no curso',
   showSyllabusOnVerso: true,
-  defaultCertificateText:
-    'A Base Administrativa do Quartel-General do Exército – Forte Caxias certifica que [NOME DO ALUNO], inscrito no CPF nº [CPF], concluiu com aproveitamento o curso [NOME DO CURSO], realizado no período de [DATA INICIAL] a [DATA FINAL], com carga horária total de [CARGA HORÁRIA] horas, desenvolvendo competências em informática, produtividade digital e uso responsável de ferramentas de Inteligência Artificial.',
+  defaultCertificateText: 'A Base Administrativa do Quartel-General do Exército – Forte Caxias certifica que [NOME DO ALUNO], inscrito no CPF nº [CPF], concluiu com aproveitamento o curso [NOME DO CURSO], realizado no período de [DATA INICIAL] a [DATA FINAL], com carga horária total de [CARGA HORÁRIA] horas, desenvolvendo competências em informática, produtividade digital e uso responsável de ferramentas de Inteligência Artificial.',
 };
 
 export function interpolateCertificateText(
@@ -119,9 +92,7 @@ export function interpolateCertificateText(
     signatoryCpf?: string;
   } = {}
 ): string {
-  let text =
-    templateText ||
-    'A Base Administrativa do Quartel-General do Exército – Forte Caxias certifica que [NOME DO ALUNO], inscrito no CPF nº [CPF], concluiu com aproveitamento o curso [NOME DO CURSO], realizado no período de [DATA INICIAL] a [DATA FINAL], com carga horária total de [CARGA HORÁRIA] horas, desenvolvendo competências em informática, produtividade digital e uso responsável de ferramentas de Inteligência Artificial.';
+  let text = templateText || INITIAL_INSTITUTION.defaultCertificateText || '';
 
   const formatDateBR = (isoDate?: string) => {
     if (!isoDate) return '';
@@ -150,7 +121,7 @@ export function interpolateCertificateText(
   text = text.replace(/\[DATA DE EMISSÃO\]/gi, issueFormatted);
   text = text.replace(/\[DATA DE CONCLUSÃO\]/gi, endFormatted);
   text = text.replace(/\[INSTRUTOR\]/gi, vars.instructorName || 'Instrutor Responsável');
-  text = text.replace(/\[INSTITUIÇÃO\]/gi, vars.institutionName || 'Base Administrativa do Quartel-General do Exército – Forte Caxias');
+  text = text.replace(/\[INSTITUIÇÃO\]/gi, vars.institutionName || INITIAL_INSTITUTION.name);
   text = text.replace(/\[LOCAL\]/gi, vars.location || 'Brasília-DF');
   text = text.replace(/\[DOCUMENTO\]/gi, vars.studentDocument || '');
   text = text.replace(/\[CPF\]/gi, vars.studentDocument || '');
@@ -161,11 +132,10 @@ export function interpolateCertificateText(
   text = text.replace(/\[RESOLUÇÃO\]/gi, vars.contranResolution || '');
   text = text.replace(/\[CONTRAN\]/gi, vars.contranResolution || '');
   text = text.replace(/\[VALIDADE\]/gi, vars.validityText || '');
-  text = text.replace(/\[CNPJ\]/gi, vars.institutionCnpj || '21.744.847/0001-50');
+  text = text.replace(/\[CNPJ\]/gi, vars.institutionCnpj || INITIAL_INSTITUTION.institutionCnpj || '');
   text = text.replace(/\[DIRETOR\]/gi, vars.signatoryName || 'Diretor Geral');
   text = text.replace(/\[SIGNATÁRIO\]/gi, vars.signatoryName || 'Diretor Geral');
   text = text.replace(/\[CPF DIRETOR\]/gi, vars.signatoryCpf || '');
-
   return text;
 }
 
@@ -188,71 +158,7 @@ export const INITIAL_COURSES: Course[] = [
   },
 ];
 
-export const INITIAL_STUDENTS: Student[] = [
-  {
-    id: 'student-demo',
-    fullName: 'ALUNO EXEMPLO',
-    email: 'aluno@exemplo.com',
-    documentNumber: '000.000.000-00',
-    courseId: 'course-operador-ia',
-    completionDate: '2026-08-26',
-    notes: 'Conclusão com aproveitamento no curso Operador de Computador com IA.',
-    createdAt: '2026-06-05T14:00:00Z',
-  },
-];
-
-const rawCertificates = [
-  {
-    id: 'cert-operador-ia-001',
-    uuid: 'a3d2e5b8-17a4-4f51-9c60-84f932e6a101',
-    code: 'CERT-2026-000001',
-    studentId: 'student-demo',
-    studentName: 'ALUNO EXEMPLO',
-    studentEmail: 'aluno@exemplo.com',
-    studentDocument: '000.000.000-00',
-    courseId: 'course-operador-ia',
-    courseName: 'Operador de Computador com IA',
-    courseSubhead: 'Operador de Computador com Inteligência Artificial',
-    courseDescription: 'Formação em informática e Inteligência Artificial aplicada.',
-    workloadHours: 230,
-    modality: 'presencial' as const,
-    instructorName: 'Instrutor Responsável',
-    institutionName: 'Base Administrativa do Quartel-General do Exército – Forte Caxias',
-    institutionCnpj: '21.744.847/0001-50',
-    legalInstruction: '',
-    contranResolution: '',
-    validityText: 'certificação referente à conclusão e ao aproveitamento no curso',
-    syllabus: DEFAULT_AI_SYLLABUS,
-    issueDate: '2026-08-26',
-    startDate: '2026-06-01',
-    endDate: '2026-08-26',
-    location: 'Brasília-DF',
-    signatoryName: 'Carlos Henrique Ferreira De Mello',
-    signatoryRole: 'Diretor Geral',
-    signatoryCpf: '981.050.007-68',
-    customText:
-      'A Base Administrativa do Quartel-General do Exército – Forte Caxias certifica que ALUNO EXEMPLO, inscrito no CPF nº 000.000.000-00, concluiu com aproveitamento o curso Operador de Computador com IA, realizado no período de 01/06/2026 a 26/08/2026, com carga horária total de 230 horas, desenvolvendo competências em informática, produtividade digital e uso responsável de ferramentas de Inteligência Artificial.',
-    templateId: 'official' as const,
-    themeSettings: TEMPLATE_PRESETS[0].defaultTheme,
-    status: 'active' as const,
-    createdAt: '2026-08-26T10:30:00Z',
-  },
-];
-
-export const INITIAL_CERTIFICATES: Certificate[] = rawCertificates.map((cert) => ({
-  ...cert,
-  integrityHash: calculateCertificateHash(cert),
-}));
-
-export const INITIAL_AUDIT_LOGS: AuditLog[] = [
-  {
-    id: 'log-1',
-    action: 'issued',
-    certificateId: 'cert-operador-ia-001',
-    certificateCode: 'CERT-2026-000001',
-    userId: 'user-admin',
-    userName: 'Administrador Local',
-    timestamp: '2026-08-26T10:30:00Z',
-    details: 'Certificado do curso Operador de Computador com IA emitido para ALUNO EXEMPLO. Hash criptográfico registrado.',
-  },
-];
+// O sistema inicia sem alunos, certificados ou registros fictícios.
+export const INITIAL_STUDENTS: Student[] = [];
+export const INITIAL_CERTIFICATES: Certificate[] = [];
+export const INITIAL_AUDIT_LOGS: AuditLog[] = [];

@@ -47,9 +47,16 @@ export const CoursesView: React.FC = () => {
     setEndDate(course.endDate || ''); setModality(course.modality || 'online'); setModalOpen(true);
   };
 
+  const handleOpenEmission = (course: Course) => {
+    sessionStorage.setItem('certifyai_prefill_course', course.id);
+    sessionStorage.removeItem('certifyai_prefill_student');
+    setCurrentView('create-certificate');
+  };
+
   const handleSaveCourse = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || workloadHours <= 0) return;
+    if (startDate && endDate && startDate > endDate) { alert('A data de início não pode ser posterior à data de término.'); return; }
     const payload = { name: name.trim(), description: description.trim(), workloadHours: Number(workloadHours), instructorName: instructorName.trim(), institutionName: institutionName.trim(), startDate, endDate, modality };
     if (editingCourseId) { updateCourse(editingCourseId, payload); notify('Curso atualizado com sucesso.'); }
     else { addCourse(payload); notify('Curso cadastrado com sucesso.'); }
@@ -87,7 +94,7 @@ export const CoursesView: React.FC = () => {
                 <div><h3 className="font-extrabold text-base text-slate-900 dark:text-white">{course.name}</h3><p className="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-2">{course.description || 'Sem descrição cadastrada.'}</p></div>
                 <div className="space-y-1.5 text-xs text-slate-600 dark:text-slate-400 pt-2 border-t border-slate-100 dark:border-slate-800"><div className="flex items-center gap-2"><Clock className="w-3.5 h-3.5" />Carga Horária: <strong>{course.workloadHours} horas</strong></div><div className="flex items-center gap-2"><User className="w-3.5 h-3.5" />Instrutor(a): {course.instructorName || 'Não especificado'}</div></div>
               </div>
-              <div className="pt-4 mt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between"><div className="flex items-center gap-3 text-xs text-slate-500"><span className="flex items-center gap-1"><Users className="w-3.5 h-3.5" />{studentCount}</span><span className="flex items-center gap-1"><Award className="w-3.5 h-3.5" />{certCount}</span></div><button onClick={() => setCurrentView('create-certificate')} className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">Emitir certificado →</button></div>
+              <div className="pt-4 mt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between"><div className="flex items-center gap-3 text-xs text-slate-500"><span className="flex items-center gap-1"><Users className="w-3.5 h-3.5" />{studentCount}</span><span className="flex items-center gap-1"><Award className="w-3.5 h-3.5" />{certCount}</span></div><button onClick={() => handleOpenEmission(course)} className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">Emitir certificado →</button></div>
             </div>
           );
         })}

@@ -10,8 +10,6 @@ import {
   VintageCornerBR,
 } from './emblems/VintageCorners';
 import { MilitarySignatureGraphic } from './emblems/SignatureGraphic';
-import { QrCodeRenderer } from './QrCodeRenderer';
-import { formatVerificationUrl } from '../utils/codeGenerator';
 import { DEFAULT_AI_SYLLABUS } from '../utils/storage';
 
 interface CertificateDocumentProps {
@@ -85,7 +83,6 @@ export const CertificateFrontPage: React.FC<CertificateDocumentProps> = ({
     customText,
   } = certificate;
 
-  const verificationUrl = formatVerificationUrl(code);
   const certificateText = customText || `${institutionName} certifica que ${studentName}, inscrito no CPF nº ${studentDocument}, concluiu com aproveitamento o curso ${courseName}, realizado no período de ${formatDateBR(startDate)} a ${formatDateBR(endDate)}, com carga horária total de ${workloadHours} horas, desenvolvendo competências em informática, produtividade digital e uso responsável de ferramentas de Inteligência Artificial.`;
 
   return (
@@ -108,7 +105,7 @@ export const CertificateFrontPage: React.FC<CertificateDocumentProps> = ({
         </div>
 
         <div className="relative z-10 px-10 pb-3 grid grid-cols-12 items-end gap-4">
-          <div className="col-span-4 flex items-end gap-3"><QrCodeRenderer value={verificationUrl} size={64} /><div className="font-sans text-[9px] text-slate-600 leading-tight"><strong className="block text-slate-900 text-[10px]">Validação digital</strong>Escaneie o QR Code ou consulte pelo código acima.</div></div>
+          <div className="col-span-4 font-sans text-[10px] text-slate-600"><p className="font-bold text-slate-900">Código de autenticidade</p><p className="font-mono text-[12px] font-black mt-1">{code}</p><p className="mt-1">Consulte o código na área de validação do sistema.</p></div>
           <div className="col-span-4 flex flex-col items-center text-center font-sans"><div className="h-12 flex items-center justify-center">{signatureImageUrl ? <img src={signatureImageUrl} alt={signatoryName} className="max-h-12 max-w-[190px] object-contain" /> : <MilitarySignatureGraphic width={170} />}</div><div className="w-56 border-t border-slate-800 mt-1 pt-1"><p className="text-[11px] font-bold">{signatoryName}</p><p className="text-[10px]">{signatoryRole}</p>{signatoryCpf && <p className="text-[9px]">CPF: {signatoryCpf}</p>}</div></div>
           <div className="col-span-4 text-right font-sans"><p className="text-[11px] font-bold">CNPJ Nº {institutionCnpj}</p><p className="text-[10px] font-bold uppercase tracking-wide">BASE ADMINISTRATIVA DO QUARTEL-GENERAL DO EXÉRCITO</p><p className="text-[10px] uppercase">FORTE CAXIAS</p></div>
         </div>
@@ -132,6 +129,5 @@ export const CertificateBackPage: React.FC<CertificateDocumentProps> = ({ certif
   );
 };
 
-// Compatibilidade com telas antigas de configuração/preview.
 export const CertificateDocument: React.FC<CertificateDocumentProps> = (props) =>
   props.page === 'back' ? <CertificateBackPage {...props} /> : <CertificateFrontPage {...props} />;

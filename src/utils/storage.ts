@@ -1,43 +1,25 @@
-import {
-  Course,
-  Student,
-  Certificate,
-  InstitutionSettings,
-  TemplatePreset,
-  AuditLog,
-} from '../types';
+import { Course, Student, Certificate, InstitutionSettings, TemplatePreset, AuditLog } from '../types';
 
-export const TEMPLATE_PRESETS: TemplatePreset[] = [
-  {
-    id: 'official',
-    name: 'Modelo Oficial Padronizado',
-    description: 'Padrão único e oficial da instituição com brasões, bordas institucionais, código de autenticidade e assinatura.',
-    badge: 'Modelo Oficial',
-    defaultTheme: {
-      primaryColor: '#1E293B',
-      secondaryColor: '#94A3B8',
-      accentColor: '#D97706',
-      fontFamily: 'serif',
-      borderStyle: 'double',
-      backgroundPattern: 'subtle',
-      showSignatoryTitle: true,
-      showSeal: true,
-    },
-  },
+export const TEMPLATE_PRESETS: TemplatePreset[] = [{
+  id: 'official',
+  name: 'Modelo Oficial CVTE',
+  description: 'Modelo institucional inspirado no certificado oficial do curso de transporte de emergência.',
+  badge: 'Modelo Oficial',
+  defaultTheme: { primaryColor: '#111827', secondaryColor: '#64748B', accentColor: '#D97706', fontFamily: 'serif', borderStyle: 'double', backgroundPattern: 'subtle', showSignatoryTitle: true, showSeal: true },
+}];
+
+export const DEFAULT_CVTE_SYLLABUS = [
+  { discipline: 'Legislação de Trânsito', workload: '10h/a', grade: 'Apto', instructor: 'INSTRUTOR RESPONSÁVEL' },
+  { discipline: 'Direção Defensiva', workload: '15h/a', grade: 'Apto', instructor: 'INSTRUTOR RESPONSÁVEL' },
+  { discipline: 'Noções de Primeiros Socorros, Respeito ao Meio Ambiente e Convívio Social', workload: '10h/a', grade: 'Apto', instructor: 'INSTRUTOR RESPONSÁVEL' },
+  { discipline: 'Relacionamento Interpessoal e Condução de Veículos de Emergência', workload: '15h/a', grade: 'Apto', instructor: 'INSTRUTOR RESPONSÁVEL' },
 ];
 
-export const DEFAULT_AI_SYLLABUS = [
-  { discipline: 'Informática Básica e Sistemas Operacionais', workload: '40h/a', grade: '10', instructor: 'INSTRUTOR RESPONSÁVEL' },
-  { discipline: 'Ferramentas de Escritório e Produtividade', workload: '60h/a', grade: '10', instructor: 'INSTRUTOR RESPONSÁVEL' },
-  { discipline: 'Inteligência Artificial Aplicada ao Escritório', workload: '60h/a', grade: '10', instructor: 'INSTRUTOR RESPONSÁVEL' },
-  { discipline: 'Engenharia de Prompts e IA Generativa', workload: '40h/a', grade: '10', instructor: 'INSTRUTOR RESPONSÁVEL' },
-  { discipline: 'Segurança Digital, Ética e Boas Práticas com IA', workload: '30h/a', grade: '10', instructor: 'INSTRUTOR RESPONSÁVEL' },
-];
-
-export const DEFAULT_CVTE_SYLLABUS = DEFAULT_AI_SYLLABUS;
+// Mantido como alias temporário para componentes antigos que ainda importam este nome.
+export const DEFAULT_AI_SYLLABUS = DEFAULT_CVTE_SYLLABUS;
 
 export const INITIAL_INSTITUTION: InstitutionSettings = {
-  name: 'Base Administrativa do Quartel-General do Exército – Forte Caxias',
+  name: 'Instituição de Ensino de Trânsito da Base Administrativa do Quartel-General do Exército – Forte Caxias',
   institutionCnpj: '21.744.847/0001-50',
   logoUrl: '',
   email: 'badmqgex@eb.mil.br',
@@ -54,103 +36,44 @@ export const INITIAL_INSTITUTION: InstitutionSettings = {
   secondSignatureImageUrl: '',
   showSecondSignature: false,
   borderStyle: 'official-security',
-  codeFormat: 'sequential',
+  codeFormat: 'cvte',
   showSeal: true,
-  sealText: 'DOCUMENTO AUTÊNTICO • FORTE CAXIAS',
-  legalInstruction: '',
-  contranResolution: '',
-  validityText: 'certificação referente à conclusão e ao aproveitamento no curso',
+  sealText: 'BASE ADMINISTRATIVA DO QUARTEL-GENERAL DO EXÉRCITO',
+  legalInstruction: 'Instrução Nº 592, de 10 de agosto de 2020/Detran-DF',
+  contranResolution: 'Resolução Nº 1.020/2025 do CONTRAN',
+  validityText: 'validade de cinco anos após o término do curso',
   showSyllabusOnVerso: true,
-  defaultCertificateText: 'A Base Administrativa do Quartel-General do Exército – Forte Caxias certifica que [NOME DO ALUNO], inscrito no CPF nº [CPF], concluiu com aproveitamento o curso [NOME DO CURSO], realizado no período de [DATA INICIAL] a [DATA FINAL], com carga horária total de [CARGA HORÁRIA] horas, desenvolvendo competências em informática, produtividade digital e uso responsável de ferramentas de Inteligência Artificial.',
+  defaultCertificateText: '[INSTITUIÇÃO] ([INSTRUÇÃO]) certifica que [NOME DO ALUNO], inscrito no CPF nº [CPF] e no Nº REGISTRO [REGISTRO], categoria “[CATEGORIA]”, concluiu com aproveitamento o [NOME DO CURSO], ministrado pela IET - Forte Caxias, no período de [DATA INICIAL] a [DATA FINAL], com carga horária de [CARGA HORÁRIA]h/a, com [VALIDADE], conforme [RESOLUÇÃO].',
 };
 
-export function interpolateCertificateText(
-  templateText?: string,
-  vars: {
-    studentName?: string;
-    courseName?: string;
-    courseSubhead?: string;
-    workloadHours?: number | string;
-    startDate?: string;
-    endDate?: string;
-    issueDate?: string;
-    instructorName?: string;
-    institutionName?: string;
-    institutionCnpj?: string;
-    location?: string;
-    studentDocument?: string;
-    registrationNumber?: string;
-    cnhCategory?: string;
-    legalInstruction?: string;
-    contranResolution?: string;
-    validityText?: string;
-    signatoryName?: string;
-    signatoryRole?: string;
-    signatoryCpf?: string;
-  } = {}
-): string {
+export function interpolateCertificateText(templateText?: string, vars: {
+  studentName?: string; courseName?: string; courseSubhead?: string; workloadHours?: number | string; startDate?: string; endDate?: string; issueDate?: string; instructorName?: string; institutionName?: string; institutionCnpj?: string; location?: string; studentDocument?: string; registrationNumber?: string; cnhCategory?: string; legalInstruction?: string; contranResolution?: string; validityText?: string; signatoryName?: string; signatoryRole?: string; signatoryCpf?: string;
+} = {}): string {
   let text = templateText || INITIAL_INSTITUTION.defaultCertificateText || '';
-  const formatDateBR = (isoDate?: string) => {
-    if (!isoDate) return '';
-    const parts = isoDate.split('-');
-    return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : isoDate;
-  };
-  const formatDateExtensoBR = (isoDate?: string) => {
-    if (!isoDate) return '';
-    const parts = isoDate.split('-');
-    if (parts.length !== 3) return isoDate;
-    const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-    return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
-  };
-  const startFormatted = formatDateBR(vars.startDate);
-  const endFormatted = formatDateBR(vars.endDate);
-  const issueFormatted = formatDateExtensoBR(vars.issueDate);
-
-  text = text.replace(/\[NOME DO ALUNO\]/gi, vars.studentName || 'NOME DO ALUNO');
-  text = text.replace(/\[NOME DO CURSO\]/gi, vars.courseName || 'Operador de Computador com IA');
-  text = text.replace(/\[SUBTÍTULO DO CURSO\]/gi, vars.courseSubhead || 'Operador de Computador com Inteligência Artificial');
-  text = text.replace(/\[CARGA HORÁRIA\]/gi, String(vars.workloadHours || '230'));
-  text = text.replace(/\[DATA INICIAL\]/gi, startFormatted);
-  text = text.replace(/\[DATA FINAL\]/gi, endFormatted);
-  text = text.replace(/\[DATA DE EMISSÃO\]/gi, issueFormatted);
-  text = text.replace(/\[DATA DE CONCLUSÃO\]/gi, endFormatted);
-  text = text.replace(/\[INSTRUTOR\]/gi, vars.instructorName || 'Instrutor Responsável');
-  text = text.replace(/\[INSTITUIÇÃO\]/gi, vars.institutionName || INITIAL_INSTITUTION.name);
-  text = text.replace(/\[LOCAL\]/gi, vars.location || 'Brasília-DF');
-  text = text.replace(/\[DOCUMENTO\]/gi, vars.studentDocument || '');
-  text = text.replace(/\[CPF\]/gi, vars.studentDocument || '');
-  text = text.replace(/\[Nº REGISTRO\]/gi, vars.registrationNumber || '');
-  text = text.replace(/\[REGISTRO\]/gi, vars.registrationNumber || '');
-  text = text.replace(/\[CATEGORIA\]/gi, vars.cnhCategory || '');
-  text = text.replace(/\[INSTRUÇÃO\]/gi, vars.legalInstruction || '');
-  text = text.replace(/\[RESOLUÇÃO\]/gi, vars.contranResolution || '');
-  text = text.replace(/\[CONTRAN\]/gi, vars.contranResolution || '');
-  text = text.replace(/\[VALIDADE\]/gi, vars.validityText || '');
-  text = text.replace(/\[CNPJ\]/gi, vars.institutionCnpj || INITIAL_INSTITUTION.institutionCnpj || '');
-  text = text.replace(/\[DIRETOR\]/gi, vars.signatoryName || 'Diretor Geral');
-  text = text.replace(/\[SIGNATÁRIO\]/gi, vars.signatoryName || 'Diretor Geral');
-  text = text.replace(/\[CPF DIRETOR\]/gi, vars.signatoryCpf || '');
+  const formatDateBR = (isoDate?: string) => { if (!isoDate) return ''; const p = isoDate.split('-'); return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : isoDate; };
+  const replacements: Array<[RegExp, string]> = [
+    [/\[NOME DO ALUNO\]/gi, vars.studentName || 'NOME DO ALUNO'], [/\[NOME DO CURSO\]/gi, vars.courseName || 'Curso Especializado para Condutores de Veículos de Transporte de Emergência'], [/\[SUBTÍTULO DO CURSO\]/gi, vars.courseSubhead || 'Condutores de Veículos de Transporte de Emergência'], [/\[CARGA HORÁRIA\]/gi, String(vars.workloadHours || '50')], [/\[DATA INICIAL\]/gi, formatDateBR(vars.startDate)], [/\[DATA FINAL\]/gi, formatDateBR(vars.endDate)], [/\[INSTRUTOR\]/gi, vars.instructorName || 'Instrutor Responsável'], [/\[INSTITUIÇÃO\]/gi, vars.institutionName || INITIAL_INSTITUTION.name], [/\[LOCAL\]/gi, vars.location || 'Brasília-DF'], [/\[DOCUMENTO\]/gi, vars.studentDocument || ''], [/\[CPF\]/gi, vars.studentDocument || ''], [/\[Nº REGISTRO\]/gi, vars.registrationNumber || ''], [/\[REGISTRO\]/gi, vars.registrationNumber || ''], [/\[CATEGORIA\]/gi, vars.cnhCategory || ''], [/\[INSTRUÇÃO\]/gi, vars.legalInstruction || INITIAL_INSTITUTION.legalInstruction || ''], [/\[RESOLUÇÃO\]/gi, vars.contranResolution || INITIAL_INSTITUTION.contranResolution || ''], [/\[CONTRAN\]/gi, vars.contranResolution || INITIAL_INSTITUTION.contranResolution || ''], [/\[VALIDADE\]/gi, vars.validityText || INITIAL_INSTITUTION.validityText || ''], [/\[CNPJ\]/gi, vars.institutionCnpj || INITIAL_INSTITUTION.institutionCnpj || ''], [/\[DIRETOR\]/gi, vars.signatoryName || 'Diretor Geral'], [/\[SIGNATÁRIO\]/gi, vars.signatoryName || 'Diretor Geral'], [/\[CPF DIRETOR\]/gi, vars.signatoryCpf || '']
+  ];
+  replacements.forEach(([pattern, value]) => { text = text.replace(pattern, value); });
   return text;
 }
 
-export const INITIAL_COURSES: Course[] = [
-  {
-    id: 'course-operador-ia',
-    name: 'Operador de Computador com IA',
-    courseSubhead: 'Operador de Computador com Inteligência Artificial',
-    description: 'Formação profissional em operação de computadores, ferramentas de escritório, produtividade digital, IA generativa, engenharia de prompts, segurança digital e uso responsável da Inteligência Artificial.',
-    workloadHours: 230,
-    instructorName: 'Instrutor Responsável',
-    institutionName: 'Base Administrativa do Quartel-General do Exército – Forte Caxias',
-    startDate: '2026-06-01',
-    endDate: '2026-08-26',
-    modality: 'presencial',
-    legalInstruction: '',
-    contranResolution: '',
-    syllabus: DEFAULT_AI_SYLLABUS,
-    createdAt: '2026-06-01T10:00:00Z',
-  },
-];
+export const INITIAL_COURSES: Course[] = [{
+  id: 'course-cvte',
+  name: 'Curso Especializado para Condutores de Veículos de Transporte de Emergência',
+  courseSubhead: 'Condutores de Veículos de Transporte de Emergência',
+  description: 'Curso especializado para capacitação de condutores de veículos de transporte de emergência.',
+  workloadHours: 50,
+  instructorName: 'Instrutor Responsável',
+  institutionName: 'Instituição de Ensino de Trânsito da Base Administrativa do Quartel-General do Exército – Forte Caxias',
+  startDate: '2026-06-08',
+  endDate: '2026-06-16',
+  modality: 'presencial',
+  legalInstruction: 'Instrução Nº 592, de 10 de agosto de 2020/Detran-DF',
+  contranResolution: 'Resolução Nº 1.020/2025 do CONTRAN',
+  syllabus: DEFAULT_CVTE_SYLLABUS,
+  createdAt: '2026-06-01T10:00:00Z',
+}];
 
 export const INITIAL_STUDENTS: Student[] = [];
 export const INITIAL_CERTIFICATES: Certificate[] = [];

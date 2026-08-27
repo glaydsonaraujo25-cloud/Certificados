@@ -17,10 +17,10 @@ import { BackupView } from './views/BackupView';
 import { ReportsView } from './views/ReportsView';
 
 const DATA_RESET_MARKER = 'certifyai_real_data_reset_v1';
+const CVTE_SWITCH_MARKER = 'certifyai_cvte_switch_v1';
 
 const MainRouter: React.FC = () => {
   const { currentView } = useApp();
-
   const renderView = () => {
     switch (currentView) {
       case 'dashboard': return <DashboardView />;
@@ -41,7 +41,6 @@ const MainRouter: React.FC = () => {
       default: return <DashboardView />;
     }
   };
-
   return <Layout>{renderView()}</Layout>;
 };
 
@@ -50,6 +49,7 @@ export default function App() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
+
     if (!localStorage.getItem(DATA_RESET_MARKER)) {
       localStorage.removeItem('certifyai_students');
       localStorage.removeItem('certifyai_certificates');
@@ -57,10 +57,21 @@ export default function App() {
       sessionStorage.removeItem('certifyai_prefill_student');
       localStorage.setItem(DATA_RESET_MARKER, 'done');
     }
+
+    // Mudança de curso: força apenas uma vez a nova configuração padrão CVTE.
+    // Alunos e certificados reais são preservados.
+    if (!localStorage.getItem(CVTE_SWITCH_MARKER)) {
+      localStorage.removeItem('certifyai_institution');
+      localStorage.removeItem('certifyai_courses');
+      localStorage.removeItem('certifyai_classes');
+      localStorage.removeItem('certifyai_data_version');
+      sessionStorage.removeItem('certifyai_prefill_course');
+      localStorage.setItem(CVTE_SWITCH_MARKER, 'done');
+    }
+
     setStorageReady(true);
   }, []);
 
   if (!storageReady) return null;
-
   return <AppProvider><MainRouter /></AppProvider>;
 }

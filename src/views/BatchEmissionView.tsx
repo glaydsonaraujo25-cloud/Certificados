@@ -21,12 +21,7 @@ interface BatchRow {
 }
 
 const digits = (value: string) => value.replace(/\D/g, '').slice(0, 11);
-const isValidCpf = (value: string) => {
-  const cpf = digits(value);
-  if (cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) return false;
-  const calc = (length: number) => { let sum = 0; for (let i = 0; i < length; i += 1) sum += Number(cpf[i]) * (length + 1 - i); const digit = (sum * 10) % 11; return digit === 10 ? 0 : digit; };
-  return calc(9) === Number(cpf[9]) && calc(10) === Number(cpf[10]);
-};
+const isValidCpf = (value: string) => digits(value).length === 11;
 const findCell = (row: Record<string, unknown>, aliases: string[]) => { const found = Object.entries(row).find(([key]) => aliases.includes(key.trim().toLowerCase())); return found ? String(found[1] ?? '').trim() : ''; };
 const waitForPaint = () => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
 
@@ -66,7 +61,7 @@ export const BatchEmissionView: React.FC = () => {
       if (!name) errorMsg = 'Nome obrigatório.';
       else if (!email || !/^\S+@\S+\.\S+$/.test(email)) errorMsg = 'E-mail inválido.';
       else if (cpf.length !== 11) errorMsg = 'CPF deve ter 11 dígitos.';
-      else if (!isValidCpf(cpf)) errorMsg = 'CPF inválido.';
+      else if (!isValidCpf(cpf)) errorMsg = 'CPF deve ter 11 dígitos.';
       else if (registration.length !== 11) errorMsg = 'Nº registro deve ter 11 dígitos.';
       else if (!category) errorMsg = 'Categoria CNH obrigatória.';
       else if ((emailCounts.get(email) || 0) > 1) errorMsg = 'E-mail repetido na planilha.';

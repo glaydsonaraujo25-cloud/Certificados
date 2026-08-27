@@ -46,7 +46,6 @@ export interface InstitutionSettings {
   contranResolution?: string;
   validityText?: string;
   codeFormat?: 'sequential' | 'alphanumeric' | 'cvte';
-  showQrCode?: boolean;
   showSeal?: boolean;
   sealText?: string;
   showSyllabusOnVerso?: boolean;
@@ -74,9 +73,9 @@ export interface Student {
   id: string;
   fullName: string;
   email: string;
-  documentNumber?: string; // CPF or ID
-  registrationNumber?: string; // Nº Registro CNH
-  cnhCategory?: string; // Categoria (ex: "AD", "B", "D", "E")
+  documentNumber?: string;
+  registrationNumber?: string;
+  cnhCategory?: string;
   courseId?: string;
   completionDate?: string;
   notes?: string;
@@ -90,24 +89,23 @@ export interface CertificateThemeSettings {
   fontFamily?: 'serif' | 'sans' | 'display' | 'cinzel';
   borderStyle?: string;
   backgroundPattern?: string;
-  showQrCode?: boolean;
   showSignatoryTitle?: boolean;
   showSeal?: boolean;
 }
 
 export interface Certificate {
   id: string;
-  uuid: string; // Unique Universal Identifier v4
-  code: string; // Public validation code, e.g. 006/CVTE/2026 or CERT-2026-000001
+  uuid: string;
+  code: string;
   studentId: string;
   studentName: string;
   studentEmail?: string;
-  studentDocument?: string; // CPF
-  registrationNumber?: string; // Nº REGISTRO CNH
-  cnhCategory?: string; // Categoria CNH, ex: "AD"
+  studentDocument?: string;
+  registrationNumber?: string;
+  cnhCategory?: string;
   courseId: string;
   courseName: string;
-  courseSubhead?: string; // ex: "Condutores de Veículos de Transporte de Emergência"
+  courseSubhead?: string;
   courseDescription?: string;
   workloadHours: number;
   modality: Modality;
@@ -115,12 +113,12 @@ export interface Certificate {
   institutionName: string;
   institutionCnpj?: string;
   institutionLogoUrl?: string;
-  legalInstruction?: string; // ex: "Instrução Nº 592, de 10 de agosto de 2020/Detran-DF"
-  contranResolution?: string; // ex: "Resolução Nº 1.020/2025 do CONTRAN"
-  validityText?: string; // ex: "com validade de cinco anos após o término do curso"
+  legalInstruction?: string;
+  contranResolution?: string;
+  validityText?: string;
   syllabus?: SyllabusItem[];
-  issueDate: string; // YYYY-MM-DD (Data de emissão)
-  expiresAt?: string; // YYYY-MM-DD (Data de expiração/validade)
+  issueDate: string;
+  expiresAt?: string;
   startDate?: string;
   endDate?: string;
   location?: string;
@@ -135,7 +133,7 @@ export interface Certificate {
   observations?: string;
   templateId?: CertificateTemplateId;
   themeSettings?: CertificateThemeSettings;
-  integrityHash: string; // SHA-256 integrity hash calculated at issuance time
+  integrityHash: string;
   status: CertificateStatus;
   cancelledAt?: string;
   cancelledBy?: string;
@@ -220,4 +218,3 @@ export interface ApiResponse<T = any> {
     status: number;
   };
 }
-

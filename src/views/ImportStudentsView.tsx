@@ -15,17 +15,7 @@ interface ImportRow {
 }
 
 const digits = (value: string) => value.replace(/\D/g, '').slice(0, 11);
-const isValidCpf = (value: string) => {
-  const cpf = digits(value);
-  if (cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) return false;
-  const calc = (length: number) => {
-    let sum = 0;
-    for (let i = 0; i < length; i += 1) sum += Number(cpf[i]) * (length + 1 - i);
-    const digit = (sum * 10) % 11;
-    return digit === 10 ? 0 : digit;
-  };
-  return calc(9) === Number(cpf[9]) && calc(10) === Number(cpf[10]);
-};
+const isValidCpf = (value: string) => digits(value).length === 11;
 const getCell = (row: Record<string, unknown>, aliases: string[]) => {
   const found = Object.entries(row).find(([key]) => aliases.includes(key.trim().toLowerCase()));
   return found ? String(found[1] ?? '').trim() : '';
@@ -62,7 +52,7 @@ export const ImportStudentsView: React.FC = () => {
       if (!row.name.trim()) error = 'Nome obrigatório.';
       else if (!email || !/^\S+@\S+\.\S+$/.test(email)) error = 'E-mail inválido.';
       else if (doc.length !== 11) error = 'CPF deve ter 11 dígitos.';
-      else if (!isValidCpf(doc)) error = 'CPF inválido.';
+      else if (!isValidCpf(doc)) error = 'CPF deve ter 11 dígitos.';
       else if (registration.length !== 11) error = 'Nº de registro deve ter 11 dígitos.';
       else if (!category) error = 'Categoria da CNH obrigatória.';
       else if ((emails.get(email) || 0) > 1) error = 'E-mail repetido na planilha.';
@@ -105,7 +95,7 @@ export const ImportStudentsView: React.FC = () => {
 
   const downloadModel = () => {
     const ws = XLSX.utils.json_to_sheet([{ nome_aluno: 'NOME COMPLETO', email: 'aluno@exemplo.com', cpf: '00000000000', numero_registro: '00000000000', categoria_cnh: 'AD' }]);
-    ws['!cols'] = [{ wch: 36 }, { wch: 30 }, { wch: 16 }, { wch: 18 }, { wch: 16 }];
+    ws['!cols'] = [{ wch: 36 }, { wch: 30 }, { wch: 18 }, { wch: 18 }, { wch: 16 }];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Condutores');
     XLSX.writeFile(wb, 'modelo_importacao_condutores_cvte.xlsx');

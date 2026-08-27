@@ -8,6 +8,7 @@ import { BatchEmissionView } from './views/BatchEmissionView';
 import { CoursesView } from './views/CoursesView';
 import { ClassesView } from './views/ClassesView';
 import { StudentsView } from './views/StudentsView';
+import { ImportStudentsView } from './views/ImportStudentsView';
 import { ValidateCertificateView } from './views/ValidateCertificateView';
 import { SettingsView } from './views/SettingsView';
 import { ApiManagementView } from './views/ApiManagementView';
@@ -29,6 +30,7 @@ const MainRouter: React.FC = () => {
       case 'courses': return <CoursesView />;
       case 'classes': return <ClassesView />;
       case 'students': return <StudentsView />;
+      case 'import-students': return <ImportStudentsView />;
       case 'validate': return <ValidateCertificateView />;
       case 'api': return <ApiManagementView />;
       case 'audit': return <AuditView />;

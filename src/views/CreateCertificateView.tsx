@@ -93,7 +93,6 @@ export const CreateCertificateView: React.FC = () => {
     if (!startDate || !endDate) { alert('Informe as datas de início e término do curso.'); return false; }
     if (startDate > endDate) { alert('A data de início não pode ser posterior à data de término.'); return false; }
     if (!issueDate) { alert('Informe a data de emissão.'); return false; }
-    if (issueDate < endDate) { alert('A data de emissão não pode ser anterior à conclusão do curso.'); return false; }
     if (!location.trim()) { alert('Informe o local de emissão.'); return false; }
     if (!syllabus.length || syllabus.some((row) => !row.discipline.trim() || !row.workload.trim())) { alert('Revise o conteúdo programático. Todas as disciplinas precisam de nome e carga horária.'); return false; }
     return true;

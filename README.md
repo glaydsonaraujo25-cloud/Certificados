@@ -57,7 +57,7 @@ A emissão em lote aceita planilhas com as seguintes informações principais:
 
 O importador também reconhece algumas variações de títulos das colunas para facilitar o preenchimento.
 
-Antes da emissão, o sistema verifica campos obrigatórios, quantidade de dígitos, categoria da CNH, registros duplicados na própria planilha e certificados ativos já existentes.
+Antes da emissão, o sistema verifica campos obrigatórios, dígitos verificadores do CPF, quantidade de dígitos do registro, categoria da CNH, registros duplicados na própria planilha e certificados ativos já existentes.
 
 ## Certificado CVTE
 
@@ -171,3 +171,13 @@ Desenvolvido por **Glaydson de Araujo Lisboa**.
 ## Status
 
 Projeto em versão funcional, com foco no fluxo de emissão e gerenciamento de certificados CVTE.
+
+
+## Confiabilidade e testes
+
+- Novos condutores são cadastrados e vinculados também na emissão individual.
+- A consulta local verifica cancelamento, expiração informada e integridade do registro. Ela não comprova autenticidade perante um servidor externo.
+- O backup é validado antes da substituição e uma cópia anterior fica preservada no navegador durante a restauração. Falhas de gravação acionam recuperação dos valores anteriores.
+- Os registros existentes não são apagados na inicialização.
+- `npm test` executa regressões de busca, CPF, consulta, backup, emissão, cancelamento e exclusão.
+- `npm run lint` verifica os tipos e `npm run build` gera a versão de produção.

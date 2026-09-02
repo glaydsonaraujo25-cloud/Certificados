@@ -1,4 +1,4 @@
-import { Certificate } from '../types';
+import type { Certificate } from '../types';
 
 /**
  * Generates a standard UUID v4 string.
@@ -176,7 +176,7 @@ export interface IntegrityVerificationResult {
   hasBeenTampered: boolean;
   isExpired: boolean;
   isCancelled: boolean;
-  statusLabel: 'Certificado válido' | 'Certificado expirado' | 'Certificado cancelado' | 'Certificado não encontrado';
+  statusLabel: 'Certificado válido' | 'Certificado expirado' | 'Certificado cancelado' | 'Certificado não encontrado' | 'Integridade não confirmada';
 }
 
 /**
@@ -213,7 +213,7 @@ export function verifyCertificateIntegrity(
   }
 
   const isCancelled = certificate.status === 'cancelled';
-  const isAuthentic = !hasBeenTampered && !isCancelled && !isExpired && certificate.status === 'active';
+  const isAuthentic = Boolean(registeredHash) && !hasBeenTampered && !isCancelled && !isExpired && certificate.status === 'active';
 
   let statusLabel: IntegrityVerificationResult['statusLabel'];
   if (isCancelled) {
@@ -223,8 +223,8 @@ export function verifyCertificateIntegrity(
   } else if (isAuthentic) {
     statusLabel = 'Certificado válido';
   } else {
-    // If tampered or not found
-    statusLabel = 'Certificado cancelado';
+    // Missing or mismatched hashes cannot establish local integrity.
+    statusLabel = 'Integridade não confirmada';
   }
 
   return {
@@ -237,3 +237,4 @@ export function verifyCertificateIntegrity(
     statusLabel,
   };
 }
+

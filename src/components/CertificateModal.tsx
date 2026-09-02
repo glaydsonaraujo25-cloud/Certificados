@@ -1,3 +1,5 @@
+import { CertificatePreview } from './CertificatePreview';
+import { verifyCertificateIntegrity } from '../utils/integrity';
 import React, { useState } from 'react';
 import { X, Download, Printer, Ban, ShieldCheck, Fingerprint, Loader2, AlertTriangle, FileText, Layers } from 'lucide-react';
 import { Certificate } from '../types';
@@ -10,12 +12,16 @@ interface CertificateModalProps {
   certificate: Certificate | null;
   isOpen: boolean;
   onClose: () => void;
-  setCurrentView: (view: any) => void;
-  setValidationSearchCode: (code: string) => void;
+  setCurrentView?: (view: string) => void;
+  setValidationSearchCode?: (code: string) => void;
 }
 
 export const CertificateModal: React.FC<CertificateModalProps> = ({ certificate, isOpen, onClose, setCurrentView, setValidationSearchCode }) => {
-  const { cancelCertificate, checkCertificateIntegrity } = useApp();
+  const app = useApp();
+  const { cancelCertificate } = app;
+  setCurrentView = setCurrentView || app.setCurrentView;
+  setValidationSearchCode = setValidationSearchCode || app.setValidationSearchCode;
+  certificate = app.certificates.find(c=>c.id===certificate?.id) || certificate;
   const [activeTab, setActiveTab] = useState<'front' | 'back' | 'both'>('front');
   const [downloading, setDownloading] = useState(false);
   const [downloadStatus, setDownloadStatus] = useState('');
@@ -33,6 +39,7 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({ certificate,
         backElementId: `modal-back-export-${certificate.id}`,
         studentName: certificate.studentName,
         courseName: certificate.courseName,
+        code: certificate.code,
         onProgress: setDownloadStatus,
       });
     } catch {
@@ -88,7 +95,7 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({ certificate,
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            <button onClick={() => setIntegrityState(checkCertificateIntegrity(certificate.code))} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-indigo-50 text-indigo-700"><Fingerprint className="w-3.5 h-3.5" />Integridade</button>
+            <button onClick={() => setIntegrityState(verifyCertificateIntegrity(certificate))} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-indigo-50 text-indigo-700"><Fingerprint className="w-3.5 h-3.5" />Integridade</button>
             <button onClick={handleGoToValidation} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 dark:bg-slate-800"><ShieldCheck className="w-3.5 h-3.5" />Validar código</button>
             <button onClick={handleDownloadFullPdf} disabled={downloading} className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold rounded-lg bg-indigo-600 text-white disabled:opacity-50">{downloading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}PDF completo</button>
             <button onClick={() => window.print()} className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800"><Printer className="w-4 h-4" /></button>
@@ -100,8 +107,8 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({ certificate,
         {downloading && <div className="px-5 py-2 text-xs bg-indigo-50 text-indigo-700">{downloadStatus || 'Gerando PDF...'}</div>}
 
         <div className="flex-1 overflow-auto p-4 sm:p-6 bg-slate-100 dark:bg-slate-950 flex flex-col items-center gap-6">
-          {(activeTab === 'front' || activeTab === 'both') && <div className="w-full flex flex-col items-center">{activeTab === 'both' && <div className="mb-2 text-xs font-bold text-slate-500 flex items-center gap-1"><FileText className="w-4 h-4" />Frente</div>}<div className="scale-[0.7] sm:scale-[0.85] lg:scale-95 origin-top"><CertificateFrontPage certificate={certificate} elementId={`modal-front-display-${certificate.id}`} isCancelled={certificate.status === 'cancelled'} /></div></div>}
-          {(activeTab === 'back' || activeTab === 'both') && <div className="w-full flex flex-col items-center">{activeTab === 'both' && <div className="mb-2 text-xs font-bold text-slate-500 flex items-center gap-1"><Layers className="w-4 h-4" />Verso</div>}<div className="scale-[0.7] sm:scale-[0.85] lg:scale-95 origin-top"><CertificateBackPage certificate={certificate} elementId={`modal-back-display-${certificate.id}`} isCancelled={certificate.status === 'cancelled'} /></div></div>}
+          {(activeTab === 'front' || activeTab === 'both') && <div className="w-full flex flex-col items-center">{activeTab === 'both' && <div className="mb-2 text-xs font-bold text-slate-500 flex items-center gap-1"><FileText className="w-4 h-4" />Frente</div>}<CertificatePreview><CertificateFrontPage certificate={certificate} elementId={`modal-front-display-${certificate.id}`} isCancelled={certificate.status === 'cancelled'} /></CertificatePreview></div>}
+          {(activeTab === 'back' || activeTab === 'both') && <div className="w-full flex flex-col items-center">{activeTab === 'both' && <div className="mb-2 text-xs font-bold text-slate-500 flex items-center gap-1"><Layers className="w-4 h-4" />Verso</div>}<CertificatePreview><CertificateBackPage certificate={certificate} elementId={`modal-back-display-${certificate.id}`} isCancelled={certificate.status === 'cancelled'} /></CertificatePreview></div>}
         </div>
 
         <div className="border-t border-slate-200 dark:border-slate-800 px-5 py-3 flex flex-wrap justify-between gap-2">
@@ -116,3 +123,4 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({ certificate,
     </div>
   );
 };
+

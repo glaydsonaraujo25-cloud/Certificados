@@ -1,3 +1,4 @@
+import { isValidCpf, matchesStudent } from '../utils/validation';
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { Certificate, Student } from '../types';
@@ -25,10 +26,7 @@ export const StudentsView: React.FC = () => {
   const [registrationNumber, setRegistrationNumber] = useState('');
   const [cnhCategory, setCnhCategory] = useState('AD');
 
-  const filteredStudents = students.filter((student) => {
-    const q = searchTerm.trim().toLowerCase();
-    return !q || student.fullName.toLowerCase().includes(q) || (student.email || '').toLowerCase().includes(q) || digitsOnly(student.documentNumber || '').includes(digitsOnly(searchTerm)) || digitsOnly(student.registrationNumber || '').includes(digitsOnly(searchTerm));
-  });
+  const filteredStudents = students.filter(student => matchesStudent(student, searchTerm));
 
   const showFeedback = (message: string) => { setFeedback(message); window.setTimeout(() => setFeedback(''), 3000); };
   const resetForm = () => { setFullName(''); setEmail(''); setDocumentNumber(''); setRegistrationNumber(''); setCnhCategory('AD'); setFormError(''); };
@@ -42,7 +40,7 @@ export const StudentsView: React.FC = () => {
     if (cleanEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) return 'Informe um e-mail válido ou deixe o campo vazio.';
     if (cleanEmail && students.some((student) => student.id !== editingStudent?.id && (student.email || '').trim().toLowerCase() === cleanEmail)) return 'Já existe um condutor cadastrado com este e-mail.';
     const cpf = digitsOnly(documentNumber);
-    if (cpf.length !== 11) return 'O CPF deve possuir exatamente 11 dígitos.';
+    if (!isValidCpf(cpf)) return 'Informe um CPF válido.';
     if (students.some((student) => student.id !== editingStudent?.id && digitsOnly(student.documentNumber || '') === cpf)) return 'Já existe um condutor cadastrado com este CPF.';
     const registration = digitsOnly(registrationNumber);
     if (registration.length !== 11) return 'O Nº de registro deve possuir exatamente 11 dígitos.';
@@ -55,12 +53,14 @@ export const StudentsView: React.FC = () => {
     const error = validateStudent();
     if (error) { setFormError(error); return; }
     const payload = { fullName: fullName.trim().toUpperCase(), email: email.trim().toLowerCase(), documentNumber: digitsOnly(documentNumber), registrationNumber: digitsOnly(registrationNumber), cnhCategory, courseId: course?.id || '', classId: undefined, completionDate: '', notes: '' };
+    try {
     if (editingStudent) { updateStudent(editingStudent.id, payload); showFeedback('Condutor atualizado com sucesso.'); }
     else { addStudent(payload); showFeedback('Condutor cadastrado com sucesso.'); }
     setIsModalOpen(false);
+    } catch (error) { setFormError(error instanceof Error ? error.message : "Não foi possível salvar."); }
   };
 
-  const confirmDelete = () => { if (!studentToDelete) return; deleteStudent(studentToDelete.id); showFeedback(`Condutor ${studentToDelete.fullName} excluído com sucesso.`); setStudentToDelete(null); };
+  const confirmDelete = () => { if (!studentToDelete) return; try { deleteStudent(studentToDelete.id); showFeedback(`Condutor ${studentToDelete.fullName} excluído com sucesso.`); setStudentToDelete(null); } catch (error) { showFeedback(error instanceof Error ? error.message : "Não foi possível excluir."); } };
 
   return <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto w-full">
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"><div><h1 className="text-2xl sm:text-3xl font-extrabold">Condutores</h1><p className="text-sm text-slate-500 mt-1">Cadastre apenas os dados necessários para emitir certificados CVTE.</p></div><button onClick={openCreate} className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-semibold"><PlusCircle className="w-4 h-4" />Novo Condutor</button></div>
@@ -79,3 +79,4 @@ export const StudentsView: React.FC = () => {
 };
 
 const Info: React.FC<{ label: string; value: string }> = ({ label, value }) => <div className="rounded-xl border p-3"><div className="text-[10px] uppercase font-bold text-slate-500">{label}</div><div className="mt-1 text-sm font-semibold break-words">{value}</div></div>;
+

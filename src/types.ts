@@ -92,6 +92,8 @@ export interface CourseClass {
   endDate: string;
   instructorName: string;
   studentIds: string[];
+  /** Notas individuais, na mesma ordem das disciplinas do conteúdo programático do curso. */
+  studentGrades?: Record<string, string[]>;
   notes?: string;
   createdAt: string;
   updatedAt?: string;
@@ -238,4 +240,3 @@ export interface ApiResponse<T = any> {
     status: number;
   };
 }
-

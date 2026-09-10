@@ -84,6 +84,7 @@ export interface Student {
 }
 
 export interface CourseClass {
+  validityYears?: number;
   id: string;
   name: string;
   courseId: string;
@@ -108,6 +109,11 @@ export interface CertificateThemeSettings {
 }
 
 export interface Certificate {
+  classId?: string;
+  className?: string;
+  replacesId?: string;
+  replacedById?: string;
+  correctionReason?: string;
   id: string;
   uuid: string;
   code: string;
@@ -232,3 +238,4 @@ export interface ApiResponse<T = any> {
     status: number;
   };
 }
+

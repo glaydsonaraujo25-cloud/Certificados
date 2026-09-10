@@ -22,6 +22,8 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({ certificate,
   setCurrentView = setCurrentView || app.setCurrentView;
   setValidationSearchCode = setValidationSearchCode || app.setValidationSearchCode;
   certificate = app.certificates.find(c=>c.id===certificate?.id) || certificate;
+  const predecessor=app.certificates.find(c=>c.id===certificate?.replacesId);
+  const successor=app.certificates.find(c=>c.id===certificate?.replacedById);
   const [activeTab, setActiveTab] = useState<'front' | 'back' | 'both'>('front');
   const [downloading, setDownloading] = useState(false);
   const [downloadStatus, setDownloadStatus] = useState('');
@@ -116,6 +118,7 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({ certificate,
           {certificate.status === 'active' && <button onClick={() => setShowCancelPrompt(true)} className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-rose-50 text-rose-700 text-xs font-bold"><Ban className="w-3.5 h-3.5" />Cancelar certificado</button>}
         </div>
 
+        {(predecessor||successor)&&<div className="p-4 border-t text-sm">{predecessor&&<p>Retifica o certificado {predecessor.code}. Motivo: {certificate.correctionReason}</p>}{successor&&<p>Substituído pelo certificado {successor.code}.</p>}</div>}
         <div className="fixed -left-[10000px] top-0"><CertificateFrontPage certificate={certificate} elementId={`modal-front-export-${certificate.id}`} isCancelled={certificate.status === 'cancelled'} /><CertificateBackPage certificate={certificate} elementId={`modal-back-export-${certificate.id}`} isCancelled={certificate.status === 'cancelled'} /></div>
       </div>
 

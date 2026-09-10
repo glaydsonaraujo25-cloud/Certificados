@@ -181,3 +181,14 @@ Projeto em versão funcional, com foco no fluxo de emissão e gerenciamento de c
 - Os registros existentes não são apagados na inicialização.
 - `npm test` executa regressões de busca, CPF, consulta, backup, emissão, cancelamento e exclusão.
 - `npm run lint` verifica os tipos e `npm run build` gera a versão de produção.
+
+## Turmas, vencimentos e retificações
+
+- **Turmas:** crie/edite período, instrutor, participantes e validade de 1 a 20 anos. Emita individualmente para um participante usando “Emitir para turma”. Turmas com certificados ficam protegidas contra exclusão.
+- **Vencimentos:** novas emissões individuais e por Excel gravam a data de validade. O prazo é configurado pelo operador; registros antigos sem data continuam como “Validade não informada”. A data final é inclusiva e o painel sinaliza os próximos 60 dias.
+- **Segunda via:** “Ver / Segunda via” abre o documento existente para download, sem novo código.
+- **Retificação:** corrige nome, registro ou categoria, exige motivo e emite novo código. O anterior é cancelado e ambos ficam vinculados. CPF, período e prazo originais são preservados; a operação não reescreve o cadastro do condutor.
+- **Filtros:** turma, ano de emissão e vencimento também se aplicam ao relatório Excel.
+- **Backup:** inclui turmas e os vínculos entre documentos; continua aceitando backups antigos sem turmas.
+
+O armazenamento permanece local. A validação de integridade é uma conferência do registro local, não uma assinatura digital externa.

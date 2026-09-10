@@ -1,4 +1,5 @@
-export const APP_KEYS = ['certifyai_institution', 'certifyai_courses', 'certifyai_students', 'certifyai_certificates', 'certifyai_theme', 'certifyai_data_version'];
+import { validDate } from './lifecycle.ts';
+export const APP_KEYS = ['certifyai_institution', 'certifyai_courses', 'certifyai_classes', 'certifyai_students', 'certifyai_certificates', 'certifyai_theme', 'certifyai_data_version'];
 export const RECOVERY_KEY = 'certifyai_backup_before_restore';
 export function writeTransaction(storage: Storage, updates: Record<string, string | null>) {
   const previous = Object.fromEntries(Object.keys(updates).map(key => [key, storage.getItem(key)]));
@@ -20,6 +21,11 @@ export function validateBackup(input: unknown): Record<string, unknown> {
   if (!record(input) || input.format !== 'certificados-cvte-backup' || input.version !== 1 || !record(input.data)) throw new Error('Arquivo de backup CVTE incompatível.');
   const data = input.data;
   if (!record(data.certifyai_institution) || typeof data.certifyai_institution.name !== 'string') throw new Error('Configuração institucional inválida.');
+  if (data.certifyai_classes !== undefined) {
+    const classes=data.certifyai_classes;
+    if(!Array.isArray(classes)||!classes.every(c=>record(c)&&['id','name','courseId','startDate','endDate','instructorName','createdAt'].every(k=>typeof c[k]==='string')&&validDate(c.startDate)&&validDate(c.endDate)&&c.startDate<=c.endDate&&Array.isArray(c.studentIds)&&c.studentIds.every(id=>typeof id==='string')&&Number.isInteger(c.validityYears)&&c.validityYears>=1&&c.validityYears<=20)) throw new Error('Turmas inválidas no backup.');
+    if(new Set(classes.map(c=>c.id)).size!==classes.length)throw new Error('Turmas duplicadas no backup.');
+  }
   const schemas: Record<string, string[]> = {
     certifyai_students: ['id', 'fullName', 'email', 'createdAt'],
     certifyai_courses: ['id', 'name', 'startDate', 'endDate', 'createdAt'],

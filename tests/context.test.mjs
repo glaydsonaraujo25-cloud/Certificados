@@ -33,3 +33,26 @@ test('falha de persistência não cria condutor nem certificado na interface',as
  assert.equal(app.students.length,0);assert.equal(app.certificates.length,0);assert.equal(localStorage.getItem('certifyai_certificates'),null);
  localStorage.setItem=original;await act(()=>root.unmount());
 });
+test('turma, validade e retificação preservam o original e seu prazo',async()=>{
+ values.clear();let root;await act(()=>{root=create(React.createElement(AppProvider,null,React.createElement(Probe)));});
+ let student;await act(()=>{student=app.addStudent({fullName:payload.studentName,email:'',documentNumber:payload.studentDocument});});
+ const draft={name:'Turma setembro',courseId:'course-cvte',startDate:'2026-09-01',endDate:'2026-09-02',instructorName:'Instrutor A',studentIds:[student.id],validityYears:5};
+ await act(()=>app.saveClass(draft));const classId=app.classes[0].id;
+ let original;await act(()=>{original=app.issueCertificate({...payload,classId,startDate:draft.startDate,endDate:draft.endDate});});
+ assert.equal(original.expiresAt,'2031-09-02');assert.equal(original.className,draft.name);
+ await act(()=>app.saveClass({...draft,validityYears:2},classId));
+ let corrected;await act(()=>{corrected=app.rectifyCertificate(original.id,{studentName:'NOME CORRIGIDO',registrationNumber:'00123456789',cnhCategory:'D'},'Correção do nome');});
+ assert.equal(corrected.expiresAt,'2031-09-02');assert.equal(corrected.replacesId,original.id);assert.notEqual(corrected.code,original.code);
+ const old=app.getCertificateByCode(original.code);assert.equal(old.studentName,payload.studentName);assert.equal(old.status,'cancelled');assert.equal(old.replacedById,corrected.id);
+ assert.throws(()=>app.rectifyCertificate(original.id,{},'repetir'));
+ assert.throws(()=>app.deleteClass(classId));
+ await act(()=>root.unmount());
+});
+test('retificação com falha de gravação não cancela o original',async()=>{
+ values.clear();let root;await act(()=>{root=create(React.createElement(AppProvider,null,React.createElement(Probe)));});
+ let original;await act(()=>{original=app.issueCertificate(payload);});
+ const write=localStorage.setItem;let failed=false;localStorage.setItem=(k,v)=>{if(k==='certifyai_certificates'&&!failed){failed=true;throw new Error('quota');}write(k,v);};
+ await act(()=>assert.throws(()=>app.rectifyCertificate(original.id,{studentName:'CORRIGIDO',registrationNumber:'00123456789',cnhCategory:'D'},'Erro de nome')));
+ assert.equal(app.certificates.length,1);assert.equal(app.certificates[0].status,'active');assert.equal(JSON.parse(localStorage.getItem('certifyai_certificates'))[0].status,'active');
+ localStorage.setItem=write;await act(()=>root.unmount());
+});

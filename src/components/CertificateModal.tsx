@@ -1,3 +1,5 @@
+import { createPortal } from 'react-dom';
+import { certificateState, stateLabels } from '../utils/lifecycle';
 import { CertificatePreview } from './CertificatePreview';
 import { verifyCertificateIntegrity } from '../utils/integrity';
 import React, { useState } from 'react';
@@ -26,6 +28,8 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({ certificate,
   const successor=app.certificates.find(c=>c.id===certificate?.replacedById);
   const [activeTab, setActiveTab] = useState<'front' | 'back' | 'both'>('front');
   const [downloading, setDownloading] = useState(false);
+  const [actionError,setActionError]=useState('');
+  const [feedback,setFeedback]=useState('');
   const [downloadStatus, setDownloadStatus] = useState('');
   const [showCancelPrompt, setShowCancelPrompt] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
@@ -35,7 +39,8 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({ certificate,
 
   const handleDownloadFullPdf = async () => {
     try {
-      setDownloading(true);
+      if(downloading)return;
+      setActionError('');setDownloading(true);
       await exportTwoPageCertificateToPdf({
         frontElementId: `modal-front-export-${certificate.id}`,
         backElementId: `modal-back-export-${certificate.id}`,
@@ -44,8 +49,8 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({ certificate,
         code: certificate.code,
         onProgress: setDownloadStatus,
       });
-    } catch {
-      alert('Erro ao gerar o PDF completo.');
+    } catch (error) {
+      setActionError(error instanceof Error ? `Não foi possível gerar o PDF: ${error.message}` : 'Não foi possível gerar o PDF.');
     } finally {
       setDownloading(false);
       setDownloadStatus('');
@@ -54,7 +59,8 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({ certificate,
 
   const handleDownloadSinglePage = async (page: 'front' | 'back') => {
     try {
-      setDownloading(true);
+      if(downloading)return;
+      setActionError('');setDownloading(true);
       await exportCertificateToPdf({
         elementId: page === 'front' ? `modal-front-export-${certificate.id}` : `modal-back-export-${certificate.id}`,
         studentName: certificate.studentName,
@@ -62,8 +68,8 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({ certificate,
         pageSuffix: page === 'front' ? 'Frente' : 'Verso',
         onProgress: setDownloadStatus,
       });
-    } catch {
-      alert('Erro ao gerar o PDF.');
+    } catch (error) {
+      setActionError(error instanceof Error ? `Não foi possível gerar o PDF: ${error.message}` : 'Não foi possível gerar o PDF.');
     } finally {
       setDownloading(false);
       setDownloadStatus('');
@@ -77,10 +83,12 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({ certificate,
   };
 
   const handleConfirmCancel = () => {
-    if (!cancelReason.trim()) return;
+    if (!cancelReason.trim()) {setActionError('Informe o motivo do cancelamento.');return;}
+    try {
     cancelCertificate(certificate.id, cancelReason.trim());
     setShowCancelPrompt(false);
-    setCancelReason('');
+    setCancelReason('');setActionError('');setIntegrityState(null);setFeedback('Certificado cancelado com sucesso.');
+    } catch(error) {setActionError(error instanceof Error ? error.message : 'Não foi possível cancelar. Tente novamente.');}
   };
 
   return (
@@ -88,7 +96,7 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({ certificate,
       <div className="relative w-full max-w-6xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[95vh]">
         <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/70">
           <div className="flex flex-wrap items-center gap-2.5">
-            <span className={`px-2.5 py-1 rounded-full text-xs font-bold uppercase ${certificate.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>{certificate.status === 'active' ? 'Ativo e válido' : 'Cancelado'}</span>
+            <span className={`px-2.5 py-1 rounded-full text-xs font-bold uppercase ${certificate.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>{stateLabels[certificateState(certificate)]}</span>
             <span className="font-mono text-xs font-bold px-2.5 py-1 rounded-lg bg-slate-200 dark:bg-slate-800">{certificate.code}</span>
             <div className="flex bg-slate-200/70 dark:bg-slate-800 p-0.5 rounded-lg text-xs">
               <button onClick={() => setActiveTab('front')} className={`px-3 py-1 rounded-md ${activeTab === 'front' ? 'bg-white dark:bg-slate-700 font-bold' : ''}`}>Frente</button>
@@ -105,6 +113,7 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({ certificate,
           </div>
         </div>
 
+        {actionError&&!showCancelPrompt&&<div role="alert" className="p-4 bg-rose-50 text-rose-800 text-sm">{actionError}</div>}{feedback&&<div role="status" className="p-3 bg-emerald-50 text-emerald-800 text-sm">{feedback}</div>}
         {integrityState && <div className={`px-5 py-2.5 text-xs border-b ${integrityState.isAuthentic ? 'bg-emerald-50 text-emerald-800' : 'bg-rose-50 text-rose-800'}`}>{integrityState.isAuthentic ? 'Integridade criptográfica confirmada.' : 'Foi detectada inconsistência nos dados deste certificado.'}</div>}
         {downloading && <div className="px-5 py-2 text-xs bg-indigo-50 text-indigo-700">{downloadStatus || 'Gerando PDF...'}</div>}
 
@@ -114,15 +123,15 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({ certificate,
         </div>
 
         <div className="border-t border-slate-200 dark:border-slate-800 px-5 py-3 flex flex-wrap justify-between gap-2">
-          <div className="flex gap-2"><button onClick={() => handleDownloadSinglePage('front')} className="px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-semibold">Baixar frente</button><button onClick={() => handleDownloadSinglePage('back')} className="px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-semibold">Baixar verso</button></div>
-          {certificate.status === 'active' && <button onClick={() => setShowCancelPrompt(true)} className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-rose-50 text-rose-700 text-xs font-bold"><Ban className="w-3.5 h-3.5" />Cancelar certificado</button>}
+          <div className="flex gap-2"><button disabled={downloading} onClick={() => handleDownloadSinglePage('front')} className="px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-semibold">Baixar frente</button><button disabled={downloading} onClick={() => handleDownloadSinglePage('back')} className="px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-semibold">Baixar verso</button></div>
+          {certificate.status !== 'cancelled' && <button disabled={downloading} onClick={() => {setActionError('');setShowCancelPrompt(true);}} className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-rose-50 text-rose-700 text-xs font-bold"><Ban className="w-3.5 h-3.5" />Cancelar certificado</button>}
         </div>
 
         {(predecessor||successor)&&<div className="p-4 border-t text-sm">{predecessor&&<p>Retifica o certificado {predecessor.code}. Motivo: {certificate.correctionReason}</p>}{successor&&<p>Substituído pelo certificado {successor.code}.</p>}</div>}
         <div className="fixed -left-[10000px] top-0"><CertificateFrontPage certificate={certificate} elementId={`modal-front-export-${certificate.id}`} isCancelled={certificate.status === 'cancelled'} /><CertificateBackPage certificate={certificate} elementId={`modal-back-export-${certificate.id}`} isCancelled={certificate.status === 'cancelled'} /></div>
       </div>
 
-      {showCancelPrompt && <div className="fixed inset-0 z-[60] bg-slate-900/70 flex items-center justify-center p-4"><div className="w-full max-w-md rounded-2xl bg-white dark:bg-slate-900 p-6"><div className="flex gap-3"><AlertTriangle className="w-5 h-5 text-rose-600" /><div><h3 className="font-bold">Cancelar certificado?</h3><p className="text-sm text-slate-500 mt-1">Informe o motivo do cancelamento.</p></div></div><textarea value={cancelReason} onChange={(e) => setCancelReason(e.target.value)} rows={3} className="mt-4 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-3 text-sm" /><div className="mt-4 flex justify-end gap-2"><button onClick={() => setShowCancelPrompt(false)} className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-sm">Voltar</button><button onClick={handleConfirmCancel} className="px-4 py-2 rounded-xl bg-rose-600 text-white text-sm font-bold">Confirmar cancelamento</button></div></div></div>}
+      {showCancelPrompt && createPortal(<div className="fixed inset-0 z-[200] bg-slate-900/70 flex items-center justify-center p-4"><div className="w-full max-w-md rounded-2xl bg-white dark:bg-slate-900 p-6"><div className="flex gap-3"><AlertTriangle className="w-5 h-5 text-rose-600" /><div><h3 className="font-bold">Cancelar certificado?</h3><p className="text-sm text-slate-500 mt-1">Informe o motivo do cancelamento.</p></div></div><label className="block mt-4 text-sm font-semibold">Motivo do cancelamento<textarea autoFocus aria-label="Motivo do cancelamento" value={cancelReason} onChange={(e) => setCancelReason(e.target.value)} rows={3} className="mt-4 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-3 text-sm" /></label>{actionError&&<p role="alert" className="mt-2 text-rose-600">{actionError}</p>}<div className="mt-4 flex justify-end gap-2"><button onClick={() => setShowCancelPrompt(false)} className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-sm">Voltar</button><button disabled={!cancelReason.trim()} onClick={handleConfirmCancel} className="px-4 py-2 rounded-xl bg-rose-600 text-white text-sm font-bold">Confirmar cancelamento</button></div></div></div>,document.body)}
     </div>
   );
 };

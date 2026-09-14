@@ -37,7 +37,7 @@ const formatPeriod = (start?: string, end?: string) => {
 };
 
 const Underline: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => (
-  <span className={`font-semibold border-b-[1.5px] border-slate-900 pb-[1px] ${className}`}>{children}</span>
+  <span className={`font-bold ${className}`}>{children}</span>
 );
 
 const Frame: React.FC<{ children: React.ReactNode; isCancelled?: boolean }> = ({ children, isCancelled }) => (

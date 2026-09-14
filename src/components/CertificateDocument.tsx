@@ -42,6 +42,7 @@ const Underline: React.FC<{ children: React.ReactNode; className?: string }> = (
 
 const Frame: React.FC<{ children: React.ReactNode; isCancelled?: boolean }> = ({ children, isCancelled }) => (
   <div className="w-full h-full relative box-border bg-white">
+    <img src="/fundo.png" alt="" aria-hidden="true" className="absolute inset-0 z-0 h-full w-full object-fill pointer-events-none select-none" />
     {isCancelled && <div className="absolute inset-0 z-50 bg-white/70 flex items-center justify-center"><div className="-rotate-12 border-8 border-rose-700 px-14 py-5 text-5xl font-black text-rose-700">CANCELADO</div></div>}
     <div className="absolute inset-[13px] border-[3px] border-slate-900" />
     <div className="absolute inset-[22px] border border-slate-900" />

@@ -36,7 +36,7 @@ export function validateBackup(input: unknown): Record<string, unknown> {
     const rows = data[key];
     if (key === 'certifyai_audit_logs' && rows === undefined) continue;
     if (!Array.isArray(rows) || !rows.every(row => record(row) && fields.every(field => typeof row[field] === 'string'))) throw new Error(`Dados inválidos em ${key}. Nenhum dado foi substituído.`);
-    if (!rows.every(row => Object.entries(row).every(([field,value]) => ['workloadHours','syllabus','themeSettings'].includes(field) || value === undefined || value === null || typeof value === 'string'))) throw new Error('Tipos de campos inválidos no backup.');
+    if (!rows.every(row => Object.entries(row).every(([field,value]) => ['workloadHours','signatureScale','signatureOffsetX','signatureOffsetY','syllabus','themeSettings'].includes(field) || value === undefined || value === null || typeof value === 'string'))) throw new Error('Tipos de campos inválidos no backup.');
     if (!rows.every(row => row.syllabus === undefined || (Array.isArray(row.syllabus) && row.syllabus.every(item => record(item) && ['discipline','workload','grade','instructor'].every(field=>typeof item[field]==='string'))))) throw new Error('Conteúdo programático inválido.');
     if (new Set(rows.map(row => row.id)).size !== rows.length) throw new Error('O backup contém identificadores duplicados.');
     if (key === 'certifyai_certificates' && (!rows.every(row => ['active', 'cancelled', 'expired'].includes(row.status) && Number.isFinite(row.workloadHours) && (!row.expiresAt || /^\d{4}-\d{2}-\d{2}$/.test(row.expiresAt))) || new Set(rows.map(row=>row.code.toUpperCase())).size!==rows.length)) throw new Error('Certificados inválidos no backup.');

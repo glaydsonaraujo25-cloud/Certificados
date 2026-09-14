@@ -36,6 +36,9 @@ export interface InstitutionSettings {
   signatoryCpf?: string;
   signatureImageUrl?: string;
   signatureMode?: 'none' | 'image' | 'govbr';
+  signatureScale?: number;
+  signatureOffsetX?: number;
+  signatureOffsetY?: number;
   secondSignatureName?: string;
   secondSignatureRole?: string;
   secondSignatureImageUrl?: string;
@@ -150,6 +153,9 @@ export interface Certificate {
   signatoryCpf?: string;
   signatureImageUrl?: string;
   signatureMode?: 'none' | 'image' | 'govbr';
+  signatureScale?: number;
+  signatureOffsetX?: number;
+  signatureOffsetY?: number;
   secondSignatoryName?: string;
   secondSignatoryRole?: string;
   secondSignatureImageUrl?: string;

@@ -20,8 +20,7 @@ const formatCpf = (value?: string) => {
 const waitForPaint = () => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
 
 export const CertificatesView: React.FC = () => {
-  const { classes, certificates, setCurrentView, setValidationSearchCode, cancelCertificate, addAuditLog } = useApp();
-  const [classFilter, setClassFilter] = useState('');
+  const { certificates, setCurrentView, setValidationSearchCode, cancelCertificate, addAuditLog } = useApp();
   const [yearFilter, setYearFilter] = useState('');
   const [rectify, setRectify] = useState<Certificate | null>(null);
   const [renewal, setRenewal] = useState<Certificate | null>(null);
@@ -47,11 +46,10 @@ export const CertificatesView: React.FC = () => {
         || (qDigits && digits(cert.registrationNumber || '').includes(qDigits));
       const state = certificateState(cert);
       return matches
-        && (!classFilter || cert.classId === classFilter)
         && (!yearFilter || cert.issueDate.startsWith(yearFilter))
         && (statusFilter === 'all' || state === statusFilter || (statusFilter === 'active' && (state === 'soon' || state === 'unknown')));
     });
-  }, [certificates, searchTerm, statusFilter, classFilter, yearFilter]);
+  }, [certificates, searchTerm, statusFilter, yearFilter]);
 
   const selectedCertificates = useMemo(
     () => filtered.filter(cert => selectedIds.has(cert.id)),
@@ -148,9 +146,7 @@ export const CertificatesView: React.FC = () => {
       }
       setBulkStatus('Compactando certificados...');
       const zip = await createZipBlob(files);
-      const suffix = classFilter
-        ? (classes.find(item => item.id === classFilter)?.name || 'turma').replace(/[^a-zA-Z0-9_-]+/g, '_')
-        : yearFilter || new Date().toISOString().slice(0, 10);
+      const suffix = yearFilter || new Date().toISOString().slice(0, 10);
       downloadBlob(zip, `certificados_cvte_${suffix}.zip`);
       setBulkStatus('Download iniciado!');
       addAuditLog('exported', `${exportCertificates.length} certificado(s) exportado(s) em PDF`);
@@ -205,8 +201,7 @@ export const CertificatesView: React.FC = () => {
     </div>
 
     <div className="flex flex-wrap gap-3">
-      <label>Turma<select className="block border rounded-xl p-2 bg-white dark:bg-slate-800" value={classFilter} onChange={e => setClassFilter(e.target.value)}><option value="">Todas as turmas</option>{classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
-      <label>Ano de emissão<select className="block border rounded-xl p-2 bg-white dark:bg-slate-800" value={yearFilter} onChange={e => setYearFilter(e.target.value)}><option value="">Todos os anos</option>{Array.from(new Set(certificates.map(c => c.issueDate.slice(0, 4)))).sort().reverse().map(y => <option key={y}>{y}</option>)}</select></label>
+<label>Ano de emissão<select className="block border rounded-xl p-2 bg-white dark:bg-slate-800" value={yearFilter} onChange={e => setYearFilter(e.target.value)}><option value="">Todos os anos</option>{Array.from(new Set(certificates.map(c => c.issueDate.slice(0, 4)))).sort().reverse().map(y => <option key={y}>{y}</option>)}</select></label>
     </div>
 
     {rectify && <RectifyModal certificate={rectify} onClose={() => setRectify(null)} onDone={c => { setRectify(null); setActiveModalCert(c); }} />}

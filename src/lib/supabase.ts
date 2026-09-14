@@ -1,6 +1,6 @@
 const DEFAULT_URL='https://mkrcbtrrjktucznzybmv.supabase.co';
 const DEFAULT_PUBLISHABLE_KEY='sb_publishable_n6vURyoecZ9DOQhkf04LMg_ZJVeapYM';
-const runtimeEnv=import.meta.env||{};
+const runtimeEnv:Partial<ImportMetaEnv>=(import.meta as ImportMeta&{env?:ImportMetaEnv}).env||{};
 export const supabaseConfig={
   url:(runtimeEnv.VITE_SUPABASE_URL||DEFAULT_URL).replace(/\/$/,''),
   publishableKey:runtimeEnv.VITE_SUPABASE_PUBLISHABLE_KEY||DEFAULT_PUBLISHABLE_KEY,

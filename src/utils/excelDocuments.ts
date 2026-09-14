@@ -18,7 +18,7 @@ export function createDriverWorkbook(syllabus: Array<{discipline:string}> = []) 
   const ws=XLSX.utils.aoa_to_sheet([headers]);
   // Explicit text cells keep zeros when users type into the prepared rows.
   for(let row=1;row<=1000;row++) for(const col of [1,2]) ws[XLSX.utils.encode_cell({r:row,c:col})]={t:'s',v:'',z:'@'};
-  ws['!ref']=`A1:${XLSX.utils.encode_col(headers.length-1)}1001`;ws['!cols']=[{wch:38},{wch:18},{wch:20},{wch:18},...noteHeaders.map(()=>({wch:28}))];
+  ws['!ref']=`A1:${XLSX.utils.encode_col(headers.length-1)}1001`;ws['!autofilter']={ref:`A1:${XLSX.utils.encode_col(headers.length-1)}1001`};ws['!cols']=[{wch:38},{wch:18},{wch:20},{wch:18},...noteHeaders.map(()=>({wch:28}))];
   const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Condutores');
   const help=XLSX.utils.aoa_to_sheet([
     ['Como preencher'],['Digite os participantes e as notas na aba Condutores. Cada disciplina possui uma coluna nota_*. As primeiras 1000 linhas de CPF e registro estão formatadas como Texto.'],

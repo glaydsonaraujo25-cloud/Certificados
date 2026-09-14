@@ -15,6 +15,7 @@ test('modelo Excel inclui uma coluna de nota para cada disciplina',()=>{
  assert.equal(ws.E1.v,'nota_1_legislacao_de_transito');
  assert.equal(ws.F1.v,'nota_2_direcao_defensiva');
  assert.equal(ws['!ref'],'A1:F1001');
+ assert.equal(ws['!autofilter'].ref,'A1:F1001');
 });
 test('normaliza o cabeçalho longo de primeiros socorros na criação e importação',()=>{
  const discipline='Noções de Primeiros Socorros, Respeito ao Meio Ambiente e Convívio Social';

@@ -18,7 +18,19 @@ export async function signInWithPassword(email:string,password:string){
  saveSupabaseSession(session);return session;
 }
 export async function signUp(email:string,password:string,name:string){
- return supabaseRequest<{user:{id:string};session:SupabaseSession|null}>('/auth/v1/signup',{method:'POST',body:JSON.stringify({email,password,data:{name}})});
+ const result=await supabaseRequest<SupabaseSession&{user:{id:string;email?:string}}>('/auth/v1/signup',{method:'POST',body:JSON.stringify({email,password,data:{name}})});
+ if(result.access_token)saveSupabaseSession(result);return result;
+}
+export async function recoverPassword(email:string){
+ return supabaseRequest('/auth/v1/recover',{method:'POST',body:JSON.stringify({email,redirect_to:location.origin})});
+}
+export async function consumeAuthRedirect():Promise<SupabaseSession|null>{
+ const params=new URLSearchParams(location.hash.replace(/^#/,''));
+ const access_token=params.get('access_token'),refresh_token=params.get('refresh_token');
+ if(!access_token||!refresh_token)return null;
+ const user=await supabaseRequest<{id:string;email?:string}>('/auth/v1/user',{},access_token);
+ const session={access_token,refresh_token,expires_in:Number(params.get('expires_in')||3600),user};
+ saveSupabaseSession(session);history.replaceState(null,'',location.pathname+location.search);return session;
 }
 export async function signOut(){
  const session=getSupabaseSession();if(session)await supabaseRequest('/auth/v1/logout',{method:'POST'},session.access_token).catch(()=>undefined);saveSupabaseSession(null);

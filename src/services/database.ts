@@ -1,7 +1,7 @@
 import { AuditLog, Certificate, Course, CourseClass, InstitutionSettings, Student } from '../types';
 import { getSupabaseSession, supabaseRequest } from '../lib/supabase';
 
-type CloudData={institution:InstitutionSettings|null;courses:Course[];students:Student[];classes:CourseClass[];certificates:Certificate[];auditLogs:AuditLog[]};
+export type CloudData={institution:InstitutionSettings|null;courses:Course[];students:Student[];classes:CourseClass[];certificates:Certificate[];auditLogs:AuditLog[]};
 const token=()=>{const value=getSupabaseSession()?.access_token;if(!value)throw new Error('Entre na conta para sincronizar com o banco de dados.');return value;};
 const select=async<T>(table:string)=>supabaseRequest<T[]>(`/rest/v1/${table}?select=data&order=created_at.desc`,{},token());
 const unwrap=<T>(rows:Array<{data:T}>)=>rows.map(row=>row.data);
@@ -20,4 +20,8 @@ export async function uploadLocalData(userId:string,data:CloudData){
  await upsert('course_classes',data.classes.map(item=>({owner_id:userId,id:item.id,course_id:item.courseId,name:item.name,data:item})));
  await upsert('certificates',data.certificates.map(item=>({owner_id:userId,id:item.id,code:item.code,student_id:item.studentId,course_id:item.courseId,status:item.status,issue_date:item.issueDate,expires_at:item.expiresAt||null,integrity_hash:item.integrityHash,data:item})));
  await upsert('audit_logs',data.auditLogs.map(item=>({owner_id:userId,id:item.id,action:item.action,certificate_id:item.certificateId||null,details:item.details,data:item,created_at:item.timestamp})));
+}
+
+export async function deleteCloudRecord(table:'students'|'course_classes',id:string){
+ await supabaseRequest(`/rest/v1/${table}?id=eq.${encodeURIComponent(id)}`,{method:'DELETE',headers:{Prefer:'return=minimal'}},token());
 }

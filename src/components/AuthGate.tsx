@@ -1,0 +1,30 @@
+import React,{useEffect,useState}from'react';
+import{consumeAuthRedirect,getSupabaseSession,saveSupabaseSession,signInWithPassword,signUp,SupabaseSession}from'../lib/supabase';
+import{loadCloudData,uploadLocalData}from'../services/database';
+import{Cloud,Loader2,LockKeyhole}from'lucide-react';
+
+const read=<T,>(key:string,fallback:T):T=>{try{return JSON.parse(localStorage.getItem(key)||'') as T}catch{return fallback}};
+const friendly=(error:unknown)=>{const text=error instanceof Error?error.message:String(error);try{const parsed=JSON.parse(text);return parsed.msg||parsed.message||parsed.error_description||'Não foi possível acessar a conta.'}catch{return text.includes('Invalid login credentials')?'E-mail ou senha incorretos.':text}};
+const isPublicValidation=()=>location.pathname.startsWith('/verificar/')||new URLSearchParams(location.search).has('verify')||new URLSearchParams(location.search).has('code');
+
+export const AuthGate:React.FC<{children:React.ReactNode}>=({children})=>{
+ const[session,setSession]=useState<SupabaseSession|null>(getSupabaseSession);
+ const[ready,setReady]=useState(false);const[loading,setLoading]=useState(false);
+ const[register,setRegister]=useState(false);const[name,setName]=useState('');const[email,setEmail]=useState('');const[password,setPassword]=useState('');const[error,setError]=useState('');const[message,setMessage]=useState('');
+ const prepare=async(active:SupabaseSession)=>{
+  const cloud=await loadCloudData();
+  const hasCloud=Boolean(cloud.institution||cloud.courses.length||cloud.students.length||cloud.certificates.length);
+  if(hasCloud){
+   if(cloud.institution)localStorage.setItem('certifyai_institution',JSON.stringify(cloud.institution));
+   localStorage.setItem('certifyai_courses',JSON.stringify(cloud.courses));localStorage.setItem('certifyai_students',JSON.stringify(cloud.students));localStorage.setItem('certifyai_classes',JSON.stringify(cloud.classes));localStorage.setItem('certifyai_certificates',JSON.stringify(cloud.certificates));localStorage.setItem('certifyai_audit_logs',JSON.stringify(cloud.auditLogs));
+  }else{
+   await uploadLocalData(active.user.id,{institution:read('certifyai_institution',null),courses:read('certifyai_courses',[]),students:read('certifyai_students',[]),classes:read('certifyai_classes',[]),certificates:read('certifyai_certificates',[]),auditLogs:read('certifyai_audit_logs',[])});
+  }
+  setSession(active);
+ };
+ useEffect(()=>{if(isPublicValidation()){setReady(true);return;}void(async()=>{try{const redirected=await consumeAuthRedirect();const active=redirected||getSupabaseSession();if(active)await prepare(active);}catch(e){saveSupabaseSession(null);setSession(null);setError(friendly(e));}finally{setReady(true);}})();},[]);
+ const submit=async(e:React.FormEvent)=>{e.preventDefault();setError('');setMessage('');if(password.length<6){setError('A senha deve ter pelo menos 6 caracteres.');return;}setLoading(true);try{if(register){if(!name.trim()){setError('Informe seu nome.');return;}const result=await signUp(email.trim(),password,name.trim());if(result.access_token)await prepare(result);else{setMessage('Cadastro realizado. Confirme o e-mail recebido e depois entre na conta.');setRegister(false);}}else await prepare(await signInWithPassword(email.trim(),password));}catch(e){setError(friendly(e));}finally{setLoading(false);}};
+ if(!ready)return <div className="min-h-screen grid place-items-center bg-slate-950 text-white"><Loader2 className="h-8 w-8 animate-spin"/></div>;
+ if(session||isPublicValidation())return <>{children}</>;
+ return <main className="min-h-screen bg-slate-950 text-slate-100 grid place-items-center p-4"><div className="w-full max-w-md rounded-3xl border border-slate-800 bg-slate-900 p-6 sm:p-8 shadow-2xl"><div className="mx-auto mb-5 grid h-12 w-12 place-items-center rounded-2xl bg-indigo-600"><LockKeyhole className="h-6 w-6"/></div><h1 className="text-center text-2xl font-black">Certificados CVTE</h1><p className="mt-2 text-center text-sm text-slate-400">{register?'Crie a conta responsável pela instituição.':'Entre para acessar e sincronizar os certificados.'}</p>{error&&<div role="alert" className="mt-5 rounded-xl border border-rose-800 bg-rose-950/40 p-3 text-sm text-rose-200">{error}</div>}{message&&<div role="status" className="mt-5 rounded-xl border border-emerald-800 bg-emerald-950/40 p-3 text-sm text-emerald-200">{message}</div>}<form onSubmit={submit} className="mt-6 space-y-4">{register&&<label className="block text-sm font-semibold">Nome<input autoComplete="name" value={name} onChange={e=>setName(e.target.value)} className="mt-1.5 w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-3" required/></label>}<label className="block text-sm font-semibold">E-mail<input type="email" autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)} className="mt-1.5 w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-3" required/></label><label className="block text-sm font-semibold">Senha<input type="password" autoComplete={register?'new-password':'current-password'} value={password} onChange={e=>setPassword(e.target.value)} minLength={6} className="mt-1.5 w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-3" required/></label><button disabled={loading} className="flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 font-bold disabled:opacity-50">{loading?<Loader2 className="h-4 w-4 animate-spin"/>:<Cloud className="h-4 w-4"/>}{register?'Criar conta':'Entrar e sincronizar'}</button></form><button onClick={()=>{setRegister(v=>!v);setError('');setMessage('')}} className="mt-5 w-full text-sm font-semibold text-indigo-300">{register?'Já tenho uma conta':'Criar minha conta'}</button><p className="mt-6 text-center text-[11px] text-slate-500">Os dados são protegidos por autenticação e regras de acesso no Supabase.</p></div></main>;
+};

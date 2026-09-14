@@ -59,7 +59,7 @@ export const CertificateFrontPage: React.FC<CertificateDocumentProps> = ({ certi
     courseName = 'Curso Especializado para Condutores de Veículos de Transporte de Emergência', courseSubhead = 'Condutores de Veículos de Transporte de Emergência', workloadHours = 50,
     startDate, endDate, issueDate, location = 'Brasília-DF', institutionName = 'Instituição de Ensino de Trânsito da Base Administrativa do Quartel-General do Exército – Forte Caxias', institutionCnpj = '21.744.847/0001-50',
     legalInstruction = 'Instrução Nº 592, de 10 de agosto de 2020/Detran-DF', contranResolution = 'Resolução Nº 1.020/2025 do CONTRAN', validityText = 'validade de cinco anos após o término do curso',
-    signatoryName = 'Carlos Henrique Ferreira De Mello', signatoryRole = 'Diretor Geral', signatoryCpf = '981.050.007-68',
+    signatoryName = 'Carlos Henrique Ferreira De Mello', signatoryRole = 'Diretor Geral', signatoryCpf = '981.050.007-68', signatureImageUrl, signatureMode = 'none',
   } = certificate;
 
   const formattedStudentCpf = formatCpf(studentDocument);
@@ -80,7 +80,7 @@ export const CertificateFrontPage: React.FC<CertificateDocumentProps> = ({ certi
         <div className="mt-[17px] px-[8px] text-[16.5px] leading-[1.62] text-justify tracking-[0.003em]"><p>{institutionName} ({legalInstruction}) certifica que <Underline className="uppercase">{studentName}</Underline>, inscrito no CPF nº <Underline>{formattedStudentCpf}</Underline> e no Nº REGISTRO <Underline>{registrationNumber}</Underline>, categoria “<Underline>{cnhCategory}</Underline>”, concluiu com aproveitamento o <Underline>{courseName}</Underline>, ministrado pela IET - Forte Caxias, no período de <Underline>{formatPeriod(startDate, endDate)}</Underline>, com carga horária de <Underline>{workloadHours}h/a</Underline>, com {validityText}, conforme {contranResolution}.</p></div>
         <div className="mt-[22px] text-center text-[16.5px] font-semibold"><Underline>{location}, {formatDateExtenso(issueDate)}</Underline></div>
         <div className="mt-auto grid grid-cols-12 items-end px-[20px] pb-[4px]">
-          <div className="col-span-4 text-center font-sans"><div className="mx-auto w-[235px] border-t border-slate-900 pt-[3px]"><p className="text-[11px] font-bold leading-tight">{signatoryName}</p><p className="text-[10px] font-bold leading-tight">{signatoryRole}</p>{signatoryCpf && <p className="text-[10px] font-bold leading-tight">CPF: {signatoryCpf}</p>}</div></div>
+          <div className="col-span-4 text-center font-sans">{signatureMode==='image'&&signatureImageUrl&&<img src={signatureImageUrl} alt="" className="mx-auto mb-[-2px] h-[42px] max-w-[190px] object-contain"/>}{signatureMode==='govbr'&&<p className="mb-1 text-[8px] font-sans text-slate-600">PDF preparado para assinatura eletrônica</p>}<div className="mx-auto w-[235px] border-t border-slate-900 pt-[3px]"><p className="text-[11px] font-bold leading-tight">{signatoryName}</p><p className="text-[10px] font-bold leading-tight">{signatoryRole}</p>{signatoryCpf && <p className="text-[10px] font-bold leading-tight">CPF: {signatoryCpf}</p>}</div></div>
           <div className="col-span-4" />
           <div className="col-span-4 text-center font-sans text-[10px] font-bold leading-[1.25] pb-[3px]"><p>CNPJ Nº {institutionCnpj}</p><p>BASE ADMINISTRATIVA DO QUARTEL-GENERAL DO EXÉRCITO</p></div>
         </div>

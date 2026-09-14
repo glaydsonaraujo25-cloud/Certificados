@@ -3,7 +3,7 @@ import { certificateState, stateLabels } from '../utils/lifecycle';
 import { CertificatePreview } from './CertificatePreview';
 import { verifyCertificateIntegrity } from '../utils/integrity';
 import React, { useState } from 'react';
-import { X, Download, Printer, Ban, ShieldCheck, Fingerprint, Loader2, AlertTriangle, FileText, Layers } from 'lucide-react';
+import { X, Download, Printer, Ban, ShieldCheck, Fingerprint, Loader2, AlertTriangle, FileText, Layers, ExternalLink } from 'lucide-react';
 import { Certificate } from '../types';
 import { useApp } from '../context/AppContext';
 import { CertificateFrontPage, CertificateBackPage } from './CertificateDocument';
@@ -108,6 +108,7 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({ certificate,
             <button onClick={() => setIntegrityState(verifyCertificateIntegrity(certificate))} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-indigo-50 text-indigo-700"><Fingerprint className="w-3.5 h-3.5" />Integridade</button>
             <button onClick={handleGoToValidation} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 dark:bg-slate-800"><ShieldCheck className="w-3.5 h-3.5" />Validar código</button>
             <button onClick={handleDownloadFullPdf} disabled={downloading} className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold rounded-lg bg-indigo-600 text-white disabled:opacity-50">{downloading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}PDF completo</button>
+            {certificate.signatureMode==='govbr'&&<a href="https://assinador.iti.br/assinatura/index.xhtml" target="_blank" rel="noreferrer" title="Baixe o PDF completo e envie-o ao portal oficial" className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold rounded-lg bg-blue-700 text-white"><ExternalLink className="w-3.5 h-3.5"/>Assinar GOV.BR</a>}
             <button onClick={() => window.print()} className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800"><Printer className="w-4 h-4" /></button>
             <button onClick={onClose} className="p-1.5 rounded-lg"><X className="w-5 h-5" /></button>
           </div>

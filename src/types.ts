@@ -173,7 +173,7 @@ export interface TemplatePreset {
 
 export interface AuditLog {
   id: string;
-  action: 'issued' | 'cancelled' | 'duplicated' | 'updated' | 'exported' | 'integrity_verified' | 'tamper_detected';
+  action: 'issued' | 'cancelled' | 'rectified' | 'renewed' | 'duplicated' | 'updated' | 'exported' | 'backup_created' | 'backup_restored' | 'integrity_verified' | 'tamper_detected';
   certificateId?: string;
   certificateCode?: string;
   userId: string;

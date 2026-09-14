@@ -1,5 +1,5 @@
 import { validDate } from './lifecycle.ts';
-export const APP_KEYS = ['certifyai_institution', 'certifyai_courses', 'certifyai_classes', 'certifyai_students', 'certifyai_certificates', 'certifyai_theme', 'certifyai_data_version'];
+export const APP_KEYS = ['certifyai_audit_logs', 'certifyai_institution', 'certifyai_courses', 'certifyai_classes', 'certifyai_students', 'certifyai_certificates', 'certifyai_theme', 'certifyai_data_version'];
 export const RECOVERY_KEY = 'certifyai_backup_before_restore';
 export function writeTransaction(storage: Storage, updates: Record<string, string | null>) {
   const previous = Object.fromEntries(Object.keys(updates).map(key => [key, storage.getItem(key)]));
@@ -27,6 +27,7 @@ export function validateBackup(input: unknown): Record<string, unknown> {
     if(new Set(classes.map(c=>c.id)).size!==classes.length)throw new Error('Turmas duplicadas no backup.');
   }
   const schemas: Record<string, string[]> = {
+    certifyai_audit_logs: ['id', 'action', 'userId', 'userName', 'timestamp', 'details'],
     certifyai_students: ['id', 'fullName', 'email', 'createdAt'],
     certifyai_courses: ['id', 'name', 'startDate', 'endDate', 'createdAt'],
     certifyai_certificates: ['id', 'uuid', 'code', 'studentId', 'studentName', 'courseId', 'courseName', 'issueDate', 'status', 'integrityHash', 'createdAt'],

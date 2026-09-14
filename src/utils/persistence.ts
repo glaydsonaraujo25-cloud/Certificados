@@ -34,6 +34,7 @@ export function validateBackup(input: unknown): Record<string, unknown> {
   };
   for (const [key, fields] of Object.entries(schemas)) {
     const rows = data[key];
+    if (key === 'certifyai_audit_logs' && rows === undefined) continue;
     if (!Array.isArray(rows) || !rows.every(row => record(row) && fields.every(field => typeof row[field] === 'string'))) throw new Error(`Dados inválidos em ${key}. Nenhum dado foi substituído.`);
     if (!rows.every(row => Object.entries(row).every(([field,value]) => ['workloadHours','syllabus','themeSettings'].includes(field) || value === undefined || value === null || typeof value === 'string'))) throw new Error('Tipos de campos inválidos no backup.');
     if (!rows.every(row => row.syllabus === undefined || (Array.isArray(row.syllabus) && row.syllabus.every(item => record(item) && ['discipline','workload','grade','instructor'].every(field=>typeof item[field]==='string'))))) throw new Error('Conteúdo programático inválido.');

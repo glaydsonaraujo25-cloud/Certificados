@@ -9,6 +9,13 @@ test('modelo Excel preserva texto e zeros após salvar e reabrir',()=>{
  const restored=XLSX.read(XLSX.write(wb,{type:'buffer',bookType:'xlsx'}),{type:'buffer',cellNF:true});
  assert.equal(restored.Sheets.Condutores.B2.v,'01234567890');assert.equal(restored.Sheets.Condutores.C2.v,'00123456789');assert.equal(restored.Sheets.Condutores.B1001.z,'@');
 });
+test('modelo Excel inclui uma coluna de nota para cada disciplina',()=>{
+ const wb=createDriverWorkbook([{discipline:'Legislação de Trânsito'},{discipline:'Direção Defensiva'}]);
+ const ws=wb.Sheets.Condutores;
+ assert.equal(ws.E1.v,'nota_1_legislacao_de_transito');
+ assert.equal(ws.F1.v,'nota_2_direcao_defensiva');
+ assert.equal(ws['!ref'],'A1:F1001');
+});
 test('recupera zero inicial só se CPF passar nos dígitos verificadores',()=>{
  assert.equal(recoverExcelCpf('1234567890'),'01234567890');
  assert.equal(recoverExcelCpf('1234567891'),'1234567891');

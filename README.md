@@ -192,3 +192,17 @@ Projeto em versão funcional, com foco no fluxo de emissão e gerenciamento de c
 - **Backup:** inclui turmas e os vínculos entre documentos; continua aceitando backups antigos sem turmas.
 
 O armazenamento permanece local. A validação de integridade é uma conferência do registro local, não uma assinatura digital externa.
+
+
+## Supabase
+
+A estrutura inicial está em `supabase/migrations/001_initial_schema.sql`. Ela cria perfis, instituição, cursos, condutores, turmas, certificados e auditoria com Row Level Security por usuário.
+
+Configuração:
+
+1. Abra o SQL Editor do projeto Supabase e execute a migração.
+2. Configure `VITE_SUPABASE_URL` e `VITE_SUPABASE_PUBLISHABLE_KEY` no ambiente da Vercel.
+3. Nunca use a chave `service_role` no frontend.
+4. A aplicação mantém os dados locais até a autenticação e a sincronização serem ativadas na próxima etapa.
+
+O cliente REST está em `src/lib/supabase.ts` e a camada de migração/sincronização em `src/services/database.ts`.

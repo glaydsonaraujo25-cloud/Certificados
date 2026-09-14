@@ -51,3 +51,23 @@ export function restoreBackup(storage: Storage, input: unknown) {
   storage.setItem(RECOVERY_KEY, JSON.stringify(previous));
   writeTransaction(storage, Object.fromEntries(APP_KEYS.map(key => [key, key in data ? JSON.stringify(data[key]) : null])));
 }
+
+export function hasRecoverySnapshot(storage: Storage) {
+  return Boolean(storage.getItem(RECOVERY_KEY));
+}
+export function restoreRecoverySnapshot(storage: Storage) {
+  const raw = storage.getItem(RECOVERY_KEY);
+  if (!raw) throw new Error('Nenhuma cópia de recuperação disponível.');
+  let snapshot: unknown;
+  try { snapshot = JSON.parse(raw); } catch { throw new Error('A cópia de recuperação está corrompida.'); }
+  if (!record(snapshot)) throw new Error('A cópia de recuperação é inválida.');
+  const updates: Record<string, string | null> = {};
+  for (const key of APP_KEYS) {
+    const value = snapshot[key];
+    if (value !== null && value !== undefined && typeof value !== 'string') throw new Error('A cópia de recuperação contém dados inválidos.');
+    updates[key] = typeof value === 'string' ? value : null;
+  }
+  const current = Object.fromEntries(APP_KEYS.map(key => [key, storage.getItem(key)]));
+  writeTransaction(storage, updates);
+  storage.setItem(RECOVERY_KEY, JSON.stringify(current));
+}

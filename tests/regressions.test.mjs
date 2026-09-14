@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { isValidCpf, matchesStudent } from '../src/utils/validation.ts';
 import { calculateCertificateHash, verifyCertificateIntegrity } from '../src/utils/integrity.ts';
-import { APP_KEYS, RECOVERY_KEY, restoreBackup, writeTransaction } from '../src/utils/persistence.ts';
+import { APP_KEYS, RECOVERY_KEY, restoreBackup, restoreRecoverySnapshot, writeTransaction } from '../src/utils/persistence.ts';
 const student = {id:'s1',fullName:'MARIA TESTE',email:'maria@example.test',documentNumber:'52998224725',registrationNumber:'00123456789',createdAt:'2026-01-01'};
 const certificate = {id:'c1',uuid:'u1',code:'001/CVTE/2026',studentId:'s1',studentName:'MARIA TESTE',studentDocument:student.documentNumber,courseId:'course',courseName:'CVTE',issueDate:'2026-01-01',createdAt:'2026-01-01',workloadHours:50,status:'active'};
 certificate.integrityHash=calculateCertificateHash(certificate);
@@ -30,4 +30,22 @@ test('falha no meio de uma gravação restaura todos os valores anteriores',()=>
 });
 test('falha de espaço durante restauração preserva registros',()=>{
  const storage=memory();for(const key of APP_KEYS)storage.setItem(key,'original');const set=storage.setItem;let failed=false;storage.setItem=(k,v)=>{if(k==='certifyai_certificates'&&!failed){failed=true;throw new Error('quota');}set(k,v);};assert.throws(()=>restoreBackup(storage,backup()));for(const key of APP_KEYS)assert.equal(storage.getItem(key),'original');assert.ok(storage.getItem(RECOVERY_KEY));
+});
+
+test('recuperação desfaz restauração e mantém opção de refazer',()=>{
+ const storage=memory();
+ storage.setItem('certifyai_students','dados-antes');
+ restoreBackup(storage,backup());
+ assert.notEqual(storage.getItem('certifyai_students'),'dados-antes');
+ restoreRecoverySnapshot(storage);
+ assert.equal(storage.getItem('certifyai_students'),'dados-antes');
+ const swap=JSON.parse(storage.getItem(RECOVERY_KEY));
+ assert.equal(JSON.parse(swap.certifyai_students)[0].id,'s1');
+});
+test('recuperação rejeita snapshot corrompido sem alterar dados',()=>{
+ const storage=memory();
+ storage.setItem('certifyai_students','dados-atuais');
+ storage.setItem(RECOVERY_KEY,'{inválido');
+ assert.throws(()=>restoreRecoverySnapshot(storage));
+ assert.equal(storage.getItem('certifyai_students'),'dados-atuais');
 });

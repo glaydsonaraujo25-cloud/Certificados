@@ -1,8 +1,9 @@
 const DEFAULT_URL='https://mkrcbtrrjktucznzybmv.supabase.co';
 const DEFAULT_PUBLISHABLE_KEY='sb_publishable_n6vURyoecZ9DOQhkf04LMg_ZJVeapYM';
+const runtimeEnv=import.meta.env||{};
 export const supabaseConfig={
-  url:(import.meta.env.VITE_SUPABASE_URL||DEFAULT_URL).replace(/\/$/,''),
-  publishableKey:import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY||DEFAULT_PUBLISHABLE_KEY,
+  url:(runtimeEnv.VITE_SUPABASE_URL||DEFAULT_URL).replace(/\/$/,''),
+  publishableKey:runtimeEnv.VITE_SUPABASE_PUBLISHABLE_KEY||DEFAULT_PUBLISHABLE_KEY,
 };
 export interface SupabaseSession {access_token:string;refresh_token:string;expires_in:number;user:{id:string;email?:string};}
 const SESSION_KEY='certifyai_supabase_session';

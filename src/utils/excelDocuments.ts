@@ -1,5 +1,8 @@
 import * as XLSX from 'xlsx';
 import { isValidCpf } from './validation.ts';
+export function normalizeSpreadsheetHeader(value: string): string {
+  return value.normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'');
+}
 /** Only recover a lost leading zero when the resulting CPF passes both check digits. */
 export function recoverExcelCpf(value: string): string {
   const text=value.trim().replace(/^'/,'');
@@ -10,7 +13,7 @@ export function recoverExcelCpf(value: string): string {
   return text;
 }
 export function createDriverWorkbook(syllabus: Array<{discipline:string}> = []) {
-  const noteHeaders=syllabus.map((item,index)=>`nota_${index+1}_${item.discipline.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'')}`);
+  const noteHeaders=syllabus.map((item,index)=>`nota_${index+1}_${normalizeSpreadsheetHeader(item.discipline)}`);
   const headers=['nome','cpf','numero_registro','categoria_cnh',...noteHeaders];
   const ws=XLSX.utils.aoa_to_sheet([headers]);
   // Explicit text cells keep zeros when users type into the prepared rows.

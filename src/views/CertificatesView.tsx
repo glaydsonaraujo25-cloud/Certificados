@@ -1,7 +1,7 @@
 import { certificateState, stateLabels } from '../utils/lifecycle';
 import { RectifyModal } from '../components/RectifyModal';
 import { RenewalModal } from '../components/RenewalModal';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { flushSync } from 'react-dom';
 import * as XLSX from 'xlsx';
 import { useApp } from '../context/AppContext';
@@ -37,6 +37,9 @@ export const CertificatesView: React.FC = () => {
   const [bulkProcessing, setBulkProcessing] = useState(false);
   const [bulkStatus, setBulkStatus] = useState('');
   const [exportingCertificate, setExportingCertificate] = useState<Certificate | null>(null);
+  const [failedPdfs, setFailedPdfs] = useState<Certificate[]>([]);
+  const [page, setPage] = useState(1);
+  const pageSize = 25;
 
   const filtered = useMemo(() => {
     const q = searchTerm.trim().toLowerCase();
@@ -55,6 +58,11 @@ export const CertificatesView: React.FC = () => {
         && (statusFilter === 'all' || state === statusFilter || (statusFilter === 'active' && (state === 'soon' || state === 'unknown')));
     });
   }, [certificates, searchTerm, statusFilter, yearFilter, issueFrom, issueTo]);
+
+  const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const paginated = useMemo(() => filtered.slice((page - 1) * pageSize, page * pageSize), [filtered, page]);
+  useEffect(() => { setPage(1); }, [searchTerm, statusFilter, yearFilter, issueFrom, issueTo]);
+  useEffect(() => { if (page > pageCount) setPage(pageCount); }, [page, pageCount]);
 
   const selectedCertificates = useMemo(
     () => filtered.filter(cert => selectedIds.has(cert.id)),
@@ -125,44 +133,56 @@ export const CertificatesView: React.FC = () => {
       turma: cert.className || '',
       validade: cert.expiresAt || '',
       status: stateLabels[certificateState(cert)],
+      cancelado_em: cert.cancelledAt ? new Date(cert.cancelledAt).toLocaleString('pt-BR') : '',
+      cancelado_por: cert.cancelledBy || '',
+      motivo_cancelamento: cert.cancellationReason || '',
     }));
     const ws = XLSX.utils.json_to_sheet(data);
-    ws['!cols'] = [{ wch: 18 }, { wch: 38 }, { wch: 18 }, { wch: 18 }, { wch: 14 }, { wch: 16 }, { wch: 14 }];
+    ws['!cols'] = [{ wch: 18 }, { wch: 38 }, { wch: 18 }, { wch: 18 }, { wch: 14 }, { wch: 16 }, { wch: 14 }, { wch: 22 }, { wch: 22 }, { wch: 45 }];
+    ws['!autofilter'] = { ref: ws['!ref'] || 'A1:J1' };
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Certificados');
     XLSX.writeFile(wb, `certificados_cvte_${new Date().toISOString().slice(0, 10)}.xlsx`);
     addAuditLog('exported', `${exportCertificates.length} certificado(s) exportado(s) para Excel`);
   };
 
-  const downloadMassPdf = async () => {
-    if (!exportCertificates.length || bulkProcessing) return;
+  const downloadMassPdf = async (retryList?: Certificate[]) => {
+    const targets = retryList || exportCertificates;
+    if (!targets.length || bulkProcessing) return;
     setBulkProcessing(true);
+    const files: { name: string; data: Blob }[] = [];
+    const failures: Certificate[] = [];
     try {
-      const files: { name: string; data: Blob }[] = [];
-      for (let i = 0; i < exportCertificates.length; i += 1) {
-        const cert = exportCertificates[i];
-        setBulkStatus(`Gerando PDF ${i + 1} de ${exportCertificates.length}`);
-        flushSync(() => setExportingCertificate(cert));
-        await waitForPaint();
-        const blob = await renderTwoPageCertificatePdfBlob({
-          frontElementId: 'mass-pdf-front',
-          backElementId: 'mass-pdf-back',
-        });
-        files.push({ name: getCertificatePdfFilename(cert.studentName, cert.code), data: blob });
+      for (let i = 0; i < targets.length; i += 1) {
+        const cert = targets[i];
+        setBulkStatus(`Gerando PDF ${i + 1} de ${targets.length}`);
+        try {
+          flushSync(() => setExportingCertificate(cert));
+          await waitForPaint();
+          const blob = await renderTwoPageCertificatePdfBlob({
+            frontElementId: 'mass-pdf-front',
+            backElementId: 'mass-pdf-back',
+          });
+          files.push({ name: getCertificatePdfFilename(cert.studentName, cert.code), data: blob });
+        } catch (error) {
+          console.error(error);
+          failures.push(cert);
+        }
       }
-      setBulkStatus('Compactando certificados...');
-      const zip = await createZipBlob(files);
-      const suffix = yearFilter || new Date().toISOString().slice(0, 10);
-      downloadBlob(zip, `certificados_cvte_${suffix}.zip`);
-      setBulkStatus('Download iniciado!');
-      addAuditLog('exported', `${exportCertificates.length} certificado(s) exportado(s) em PDF`);
-    } catch (error) {
-      console.error(error);
-      alert('Não foi possível gerar todos os PDFs. Tente novamente.');
+      setFailedPdfs(failures);
+      if (files.length) {
+        setBulkStatus('Compactando certificados...');
+        const zip = await createZipBlob(files);
+        const suffix = yearFilter || new Date().toISOString().slice(0, 10);
+        downloadBlob(zip, `certificados_cvte_${suffix}.zip`);
+        addAuditLog('exported', `${files.length} certificado(s) exportado(s) em PDF`);
+      }
+      if (failures.length) alert(`${failures.length} PDF(s) falharam. Use “Tentar novamente” para processar somente os pendentes.`);
+      else setBulkStatus('Download iniciado!');
     } finally {
       setExportingCertificate(null);
       setBulkProcessing(false);
-      setTimeout(() => setBulkStatus(''), 1200);
+      setTimeout(() => setBulkStatus(''), 1500);
     }
   };
 
@@ -174,7 +194,7 @@ export const CertificatesView: React.FC = () => {
       </div>
       <div className="flex flex-wrap gap-2">
         <button onClick={()=>setShowCpf(value=>!value)} className="flex items-center gap-2 px-4 py-2.5 rounded-xl border bg-white dark:bg-slate-900 text-sm font-bold">{showCpf?<EyeOff className="w-4 h-4"/>:<Eye className="w-4 h-4"/>}{showCpf?'Ocultar CPFs':'Mostrar CPFs'}</button>
-        <button onClick={downloadMassPdf} disabled={!exportCertificates.length || bulkProcessing} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-bold disabled:opacity-40">
+        <button onClick={()=>downloadMassPdf()} disabled={!exportCertificates.length || bulkProcessing} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-bold disabled:opacity-40">
           {bulkProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileArchive className="w-4 h-4" />}
           {bulkProcessing ? bulkStatus || 'Gerando PDFs...' : `Baixar PDFs (${exportCertificates.length})`}
         </button>
@@ -194,6 +214,8 @@ export const CertificatesView: React.FC = () => {
         <button onClick={cancelSelected} disabled={!selectedCertificates.some(cert => cert.status !== 'cancelled')} className="px-3 py-1.5 rounded-lg bg-rose-600 text-white text-sm font-bold disabled:opacity-40"><Ban className="w-4 h-4 inline mr-1" />Cancelar selecionados</button>
       </div>
     </div>}
+
+    {failedPdfs.length>0&&<div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 flex flex-wrap items-center justify-between gap-3 text-sm text-amber-900"><span>{failedPdfs.length} PDF(s) aguardando nova tentativa.</span><button onClick={()=>downloadMassPdf(failedPdfs)} disabled={bulkProcessing} className="rounded-lg bg-amber-600 px-3 py-2 font-bold text-white disabled:opacity-50"><RotateCcw className="inline h-4 w-4 mr-1"/>Tentar novamente</button></div>}
 
     {bulkProcessing && <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 font-semibold">{bulkStatus}</div>}
 
@@ -217,8 +239,9 @@ export const CertificatesView: React.FC = () => {
     {rectify && <RectifyModal certificate={rectify} onClose={() => setRectify(null)} onDone={c => { setRectify(null); setActiveModalCert(c); }} />}
 
     <div className="bg-white dark:bg-slate-900 rounded-2xl border overflow-hidden">
-      {filtered.length === 0 ? <div className="p-12 text-center"><Award className="w-10 h-10 text-slate-400 mx-auto mb-3" /><p className="text-sm font-semibold">Nenhum certificado encontrado.</p></div> : <div className="overflow-x-auto"><table className="w-full text-left text-xs"><thead className="bg-slate-50 dark:bg-slate-800 text-slate-500 uppercase text-[10px]"><tr><th className="px-4 py-3.5"><input type="checkbox" aria-label="Selecionar certificados filtrados" checked={allFilteredSelected} onChange={toggleAllFiltered} /></th><th className="px-4 py-3.5">Código</th><th className="px-4 py-3.5">Condutor</th><th className="px-4 py-3.5">Nº Registro / CNH</th><th className="px-4 py-3.5">Emissão</th><th className="px-4 py-3.5">Status</th><th className="px-4 py-3.5 text-right">Ações</th></tr></thead><tbody className="divide-y">{filtered.map(cert => <tr key={cert.id} className={selectedIds.has(cert.id) ? "bg-indigo-50/60 dark:bg-indigo-950/20" : ""}><td className="px-4 py-4"><input type="checkbox" aria-label={`Selecionar ${cert.studentName}`} checked={selectedIds.has(cert.id)} onChange={() => toggleSelection(cert.id)} /></td><td className="px-4 py-4"><div className="flex items-center gap-2"><span className="font-mono font-bold text-indigo-600">{cert.code}</span><button onClick={() => copyCode(cert.code, cert.id)} title="Copiar código">{copiedId === cert.id ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}</button></div></td><td className="px-4 py-4"><div className="font-bold">{cert.studentName}</div><div className="text-[11px] text-slate-500">CPF: {showCpf?formatCpf(cert.studentDocument):'***.***.***-**'}</div></td><td className="px-4 py-4"><div className="font-mono">{cert.registrationNumber || '-'}</div><div className="text-[11px] font-bold">CNH {cert.cnhCategory || '-'}</div></td><td className="px-4 py-4">{cert.issueDate ? new Date(`${cert.issueDate}T00:00:00`).toLocaleDateString('pt-BR') : '-'}<div className="mt-1 text-slate-500">Validade: {cert.expiresAt?.split('-').reverse().join('/') || 'Não informada'}</div><div>{cert.className}</div></td><td className="px-4 py-4"><span className={`inline-flex px-2.5 py-1 rounded-full font-bold uppercase text-[10px] ${certificateState(cert) === 'active' ? 'bg-emerald-100 text-emerald-700' : cert.status === 'cancelled' ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-700'}`}>{stateLabels[certificateState(cert)]}</span>{cert.status==='cancelled'&&<div className="mt-2 max-w-52 text-[10px] leading-relaxed text-rose-700"><strong>Cancelado em:</strong> {cert.cancelledAt?new Date(cert.cancelledAt).toLocaleString('pt-BR'):'data não informada'}<br/><strong>Motivo:</strong> {cert.cancellationReason||'Não informado'}</div>}</td><td className="px-4 py-4"><div className="flex justify-end gap-2"><button onClick={() => setActiveModalCert(cert)} className="px-3 py-1.5 rounded-lg bg-indigo-50 text-indigo-700 font-semibold">Ver / Segunda via</button>{cert.status !== 'cancelled' && <button className="text-indigo-600 font-semibold" onClick={() => setRectify(cert)}>Retificar</button>}{cert.status !== 'cancelled' && <button className="flex items-center gap-1 text-emerald-700 font-semibold" onClick={() => setRenewal(cert)}><RotateCcw className="w-3.5 h-3.5" />Renovar</button>}{cert.status === 'active' && <button onClick={() => { setCancelTarget(cert); setCancelReason(''); }} className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-rose-50 text-rose-700 font-semibold"><Ban className="w-3.5 h-3.5" />Cancelar</button>}</div></td></tr>)}</tbody></table></div>}
+      {filtered.length === 0 ? <div className="p-12 text-center"><Award className="w-10 h-10 text-slate-400 mx-auto mb-3" /><p className="text-sm font-semibold">Nenhum certificado encontrado.</p></div> : <div className="overflow-x-auto"><table className="w-full text-left text-xs"><thead className="bg-slate-50 dark:bg-slate-800 text-slate-500 uppercase text-[10px]"><tr><th className="px-4 py-3.5"><input type="checkbox" aria-label="Selecionar certificados filtrados" checked={allFilteredSelected} onChange={toggleAllFiltered} /></th><th className="px-4 py-3.5">Código</th><th className="px-4 py-3.5">Condutor</th><th className="px-4 py-3.5">Nº Registro / CNH</th><th className="px-4 py-3.5">Emissão</th><th className="px-4 py-3.5">Status</th><th className="px-4 py-3.5 text-right">Ações</th></tr></thead><tbody className="divide-y">{paginated.map(cert => <tr key={cert.id} className={selectedIds.has(cert.id) ? "bg-indigo-50/60 dark:bg-indigo-950/20" : ""}><td className="px-4 py-4"><input type="checkbox" aria-label={`Selecionar ${cert.studentName}`} checked={selectedIds.has(cert.id)} onChange={() => toggleSelection(cert.id)} /></td><td className="px-4 py-4"><div className="flex items-center gap-2"><span className="font-mono font-bold text-indigo-600">{cert.code}</span><button onClick={() => copyCode(cert.code, cert.id)} title="Copiar código">{copiedId === cert.id ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}</button></div></td><td className="px-4 py-4"><div className="font-bold">{cert.studentName}</div><div className="text-[11px] text-slate-500">CPF: {showCpf?formatCpf(cert.studentDocument):'***.***.***-**'}</div></td><td className="px-4 py-4"><div className="font-mono">{cert.registrationNumber || '-'}</div><div className="text-[11px] font-bold">CNH {cert.cnhCategory || '-'}</div></td><td className="px-4 py-4">{cert.issueDate ? new Date(`${cert.issueDate}T00:00:00`).toLocaleDateString('pt-BR') : '-'}<div className="mt-1 text-slate-500">Validade: {cert.expiresAt?.split('-').reverse().join('/') || 'Não informada'}</div><div>{cert.className}</div></td><td className="px-4 py-4"><span className={`inline-flex px-2.5 py-1 rounded-full font-bold uppercase text-[10px] ${certificateState(cert) === 'active' ? 'bg-emerald-100 text-emerald-700' : cert.status === 'cancelled' ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-700'}`}>{stateLabels[certificateState(cert)]}</span>{cert.status==='cancelled'&&<div className="mt-2 max-w-52 text-[10px] leading-relaxed text-rose-700"><strong>Cancelado em:</strong> {cert.cancelledAt?new Date(cert.cancelledAt).toLocaleString('pt-BR'):'data não informada'}<br/><strong>Motivo:</strong> {cert.cancellationReason||'Não informado'}</div>}</td><td className="px-4 py-4"><div className="flex justify-end gap-2"><button onClick={() => setActiveModalCert(cert)} className="px-3 py-1.5 rounded-lg bg-indigo-50 text-indigo-700 font-semibold">Ver / Segunda via</button>{cert.status !== 'cancelled' && <button className="text-indigo-600 font-semibold" onClick={() => setRectify(cert)}>Retificar</button>}{cert.status !== 'cancelled' && <button className="flex items-center gap-1 text-emerald-700 font-semibold" onClick={() => setRenewal(cert)}><RotateCcw className="w-3.5 h-3.5" />Renovar</button>}{cert.status === 'active' && <button onClick={() => { setCancelTarget(cert); setCancelReason(''); }} className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-rose-50 text-rose-700 font-semibold"><Ban className="w-3.5 h-3.5" />Cancelar</button>}</div></td></tr>)}</tbody></table></div>}
     </div>
+    {filtered.length>pageSize&&<nav aria-label="Paginação de certificados" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-white dark:bg-slate-900 px-4 py-3 text-sm"><span>Mostrando {(page-1)*pageSize+1}–{Math.min(page*pageSize,filtered.length)} de {filtered.length}</span><div className="flex items-center gap-2"><button aria-label="Página anterior" disabled={page===1} onClick={()=>setPage(value=>Math.max(1,value-1))} className="rounded-lg border px-3 py-2 font-semibold disabled:opacity-40">Anterior</button><span className="font-semibold">Página {page} de {pageCount}</span><button aria-label="Próxima página" disabled={page===pageCount} onClick={()=>setPage(value=>Math.min(pageCount,value+1))} className="rounded-lg border px-3 py-2 font-semibold disabled:opacity-40">Próxima</button></div></nav>}
 
     {renewal && <RenewalModal certificate={renewal} onClose={() => setRenewal(null)} onDone={certificate => { setRenewal(null); setActiveModalCert(certificate); }} />}
 

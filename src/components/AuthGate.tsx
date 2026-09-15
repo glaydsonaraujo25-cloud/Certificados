@@ -15,7 +15,8 @@ export const AuthGate:React.FC<{children:React.ReactNode}>=({children})=>{
  const prepare=async(active:SupabaseSession)=>{
   const cloud=await loadCloudData();
   const local={institution:read('certifyai_institution',INITIAL_INSTITUTION),courses:read('certifyai_courses',INITIAL_COURSES),students:read('certifyai_students',[]),classes:read('certifyai_classes',[]),certificates:read('certifyai_certificates',[]),auditLogs:read('certifyai_audit_logs',[])};
-  const merged={institution:cloud.institution||local.institution,courses:mergeRequiredCourses(cloud.courses.length?cloud.courses:(local.courses.length?local.courses:INITIAL_COURSES)),students:cloud.students.length?cloud.students:local.students,classes:cloud.classes.length?cloud.classes:local.classes,certificates:cloud.certificates.length?cloud.certificates:local.certificates,auditLogs:cloud.auditLogs.length?cloud.auditLogs:local.auditLogs};
+  const hasCloud=Boolean(cloud.institution||cloud.courses.length||cloud.students.length||cloud.classes.length||cloud.certificates.length||cloud.auditLogs.length);
+  const merged=hasCloud?{institution:cloud.institution||local.institution,courses:mergeRequiredCourses(cloud.courses),students:cloud.students,classes:cloud.classes,certificates:cloud.certificates,auditLogs:cloud.auditLogs}:{...local,courses:mergeRequiredCourses(local.courses.length?local.courses:INITIAL_COURSES)};
   localStorage.setItem('certifyai_institution',JSON.stringify(merged.institution));localStorage.setItem('certifyai_courses',JSON.stringify(merged.courses));localStorage.setItem('certifyai_students',JSON.stringify(merged.students));localStorage.setItem('certifyai_classes',JSON.stringify(merged.classes));localStorage.setItem('certifyai_certificates',JSON.stringify(merged.certificates));localStorage.setItem('certifyai_audit_logs',JSON.stringify(merged.auditLogs));
   await uploadLocalData(active.user.id,merged);
   setSession(active);

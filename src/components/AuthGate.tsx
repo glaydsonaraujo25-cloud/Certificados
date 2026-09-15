@@ -1,6 +1,6 @@
 import React,{useEffect,useState}from'react';
 import{consumeAuthRedirect,getSupabaseSession,saveSupabaseSession,signInWithPassword,signUp,SupabaseSession}from'../lib/supabase';
-import{loadCloudData,uploadLocalData}from'../services/database';
+import{clearCloudOperationalData,loadCloudData,uploadLocalData}from'../services/database';
 import{Cloud,Loader2,LockKeyhole}from'lucide-react';
 import{INITIAL_COURSES,INITIAL_INSTITUTION,mergeRequiredCourses}from'../utils/storage';
 
@@ -13,6 +13,11 @@ export const AuthGate:React.FC<{children:React.ReactNode}>=({children})=>{
  const[ready,setReady]=useState(false);const[loading,setLoading]=useState(false);
  const[register,setRegister]=useState(false);const[name,setName]=useState('');const[email,setEmail]=useState('');const[password,setPassword]=useState('');const[error,setError]=useState('');const[message,setMessage]=useState('');
  const prepare=async(active:SupabaseSession)=>{
+  const resetKey='certifyai_operational_reset_2026_09_15';
+  if(localStorage.getItem(resetKey)!=='done'){
+   await clearCloudOperationalData();
+   localStorage.setItem('certifyai_students','[]');localStorage.setItem('certifyai_classes','[]');localStorage.setItem('certifyai_certificates','[]');localStorage.setItem('certifyai_audit_logs','[]');localStorage.setItem(resetKey,'done');
+  }
   const cloud=await loadCloudData();
   const local={institution:read('certifyai_institution',INITIAL_INSTITUTION),courses:read('certifyai_courses',INITIAL_COURSES),students:read('certifyai_students',[]),classes:read('certifyai_classes',[]),certificates:read('certifyai_certificates',[]),auditLogs:read('certifyai_audit_logs',[])};
   const hasCloud=Boolean(cloud.institution||cloud.courses.length||cloud.students.length||cloud.classes.length||cloud.certificates.length||cloud.auditLogs.length);

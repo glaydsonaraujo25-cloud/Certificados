@@ -1,13 +1,15 @@
 /** Gera códigos públicos únicos para os certificados. */
 export function generateCertificateCode(
   existingCodes: string[] = [],
-  format: 'sequential' | 'alphanumeric' | 'cvte' = 'cvte'
+  format: 'sequential' | 'alphanumeric' | 'cvte' = 'cvte',
+  courseCode = 'CVTE'
 ): string {
   const year = new Date().getFullYear();
 
   if (format === 'cvte') {
     let nextNumber = 1;
-    const yearSuffix = `/CVTE/${year}`;
+    const safeCourseCode = courseCode.replace(/[^A-Z0-9]/gi, '').toUpperCase() || 'CVTE';
+    const yearSuffix = `/${safeCourseCode}/${year}`;
     existingCodes.filter((code) => code.endsWith(yearSuffix)).forEach((code) => {
       const numPart = parseInt(code.split('/')[0], 10);
       if (!Number.isNaN(numPart) && numPart >= nextNumber) nextNumber = numPart + 1;

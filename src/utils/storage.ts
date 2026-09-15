@@ -58,22 +58,29 @@ export function interpolateCertificateText(templateText?: string, vars: {
   return text;
 }
 
-export const INITIAL_COURSES: Course[] = [{
-  id: 'course-cvte',
-  name: 'Curso Especializado para Condutores de Veículos de Transporte de Emergência',
-  courseSubhead: 'Condutores de Veículos de Transporte de Emergência',
-  description: 'Curso especializado para capacitação de condutores de veículos de transporte de emergência.',
-  workloadHours: 50,
-  instructorName: 'Instrutor Responsável',
-  institutionName: 'Instituição de Ensino de Trânsito da Base Administrativa do Quartel-General do Exército – Forte Caxias',
-  startDate: '2026-06-08',
-  endDate: '2026-06-16',
-  modality: 'presencial',
-  legalInstruction: 'Instrução Nº 592, de 10 de agosto de 2020/Detran-DF',
-  contranResolution: 'Resolução Nº 1.020/2025 do CONTRAN',
-  syllabus: DEFAULT_CVTE_SYLLABUS,
-  createdAt: '2026-06-01T10:00:00Z',
-}];
+export const INITIAL_COURSES: Course[] = [
+  { id:'course-cvte', name:'Curso Especializado para Condutores de Veículos de Transporte de Emergência', courseSubhead:'Condutores de Veículos de Transporte de Emergência', description:'Curso especializado para capacitação de condutores de veículos de transporte de emergência.' },
+  { id:'course-mopp', name:'Curso Especializado para Condutores de Veículos de Transporte de Produto Perigoso', courseSubhead:'Condutores de Veículos de Transporte de Produto Perigoso', description:'Curso especializado para capacitação de condutores de veículos de transporte de produto perigoso.' },
+  { id:'course-ctcp', name:'Curso Especializado para Condutores de Transporte Coletivo de Passageiros', courseSubhead:'Condutores de Transporte Coletivo de Passageiros', description:'Curso especializado para capacitação de condutores de transporte coletivo de passageiros.' },
+  { id:'course-cvtci', name:'Curso Especializado para Condutores de Veículos de Transporte de Carga Indivisível', courseSubhead:'Condutores de Veículos de Transporte de Carga Indivisível', description:'Curso especializado para capacitação de condutores de veículos de transporte de carga indivisível.' },
+].map((course):Course=>({
+  ...course,
+  workloadHours:50,
+  instructorName:'Instrutor Responsável',
+  institutionName:'Instituição de Ensino de Trânsito da Base Administrativa do Quartel-General do Exército – Forte Caxias',
+  startDate:'2026-06-08',
+  endDate:'2026-06-16',
+  modality:'presencial',
+  legalInstruction:'Instrução Nº 592, de 10 de agosto de 2020/Detran-DF',
+  contranResolution:'Resolução Nº 1.020/2025 do CONTRAN',
+  syllabus:DEFAULT_CVTE_SYLLABUS.map(item=>({...item})),
+  createdAt:'2026-06-01T10:00:00Z',
+}));
+
+export const mergeRequiredCourses=(existing:Course[]):Course[]=>{
+ const byId=new Map(existing.map(course=>[course.id,course]));
+ return[...existing,...INITIAL_COURSES.filter(course=>!byId.has(course.id))];
+};
 
 export const INITIAL_STUDENTS: Student[] = [];
 export const INITIAL_CERTIFICATES: Certificate[] = [];

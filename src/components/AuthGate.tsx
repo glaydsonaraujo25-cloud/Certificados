@@ -2,7 +2,7 @@ import React,{useEffect,useState}from'react';
 import{consumeAuthRedirect,getSupabaseSession,saveSupabaseSession,signInWithPassword,signUp,SupabaseSession}from'../lib/supabase';
 import{loadCloudData,uploadLocalData}from'../services/database';
 import{Cloud,Loader2,LockKeyhole}from'lucide-react';
-import{INITIAL_COURSES,INITIAL_INSTITUTION}from'../utils/storage';
+import{INITIAL_COURSES,INITIAL_INSTITUTION,mergeRequiredCourses}from'../utils/storage';
 
 const read=<T,>(key:string,fallback:T):T=>{try{return JSON.parse(localStorage.getItem(key)||'') as T}catch{return fallback}};
 const friendly=(error:unknown)=>{const text=error instanceof Error?error.message:String(error);try{const parsed=JSON.parse(text);return parsed.msg||parsed.message||parsed.error_description||'Não foi possível acessar a conta.'}catch{return text.includes('Invalid login credentials')?'E-mail ou senha incorretos.':text}};
@@ -15,7 +15,7 @@ export const AuthGate:React.FC<{children:React.ReactNode}>=({children})=>{
  const prepare=async(active:SupabaseSession)=>{
   const cloud=await loadCloudData();
   const local={institution:read('certifyai_institution',INITIAL_INSTITUTION),courses:read('certifyai_courses',INITIAL_COURSES),students:read('certifyai_students',[]),classes:read('certifyai_classes',[]),certificates:read('certifyai_certificates',[]),auditLogs:read('certifyai_audit_logs',[])};
-  const merged={institution:cloud.institution||local.institution,courses:cloud.courses.length?cloud.courses:(local.courses.length?local.courses:INITIAL_COURSES),students:cloud.students.length?cloud.students:local.students,classes:cloud.classes.length?cloud.classes:local.classes,certificates:cloud.certificates.length?cloud.certificates:local.certificates,auditLogs:cloud.auditLogs.length?cloud.auditLogs:local.auditLogs};
+  const merged={institution:cloud.institution||local.institution,courses:mergeRequiredCourses(cloud.courses.length?cloud.courses:(local.courses.length?local.courses:INITIAL_COURSES)),students:cloud.students.length?cloud.students:local.students,classes:cloud.classes.length?cloud.classes:local.classes,certificates:cloud.certificates.length?cloud.certificates:local.certificates,auditLogs:cloud.auditLogs.length?cloud.auditLogs:local.auditLogs};
   localStorage.setItem('certifyai_institution',JSON.stringify(merged.institution));localStorage.setItem('certifyai_courses',JSON.stringify(merged.courses));localStorage.setItem('certifyai_students',JSON.stringify(merged.students));localStorage.setItem('certifyai_classes',JSON.stringify(merged.classes));localStorage.setItem('certifyai_certificates',JSON.stringify(merged.certificates));localStorage.setItem('certifyai_audit_logs',JSON.stringify(merged.auditLogs));
   await uploadLocalData(active.user.id,merged);
   setSession(active);

@@ -25,6 +25,10 @@ export async function signUp(email:string,password:string,name:string){
 export async function recoverPassword(email:string){
  return supabaseRequest('/auth/v1/recover',{method:'POST',body:JSON.stringify({email,redirect_to:location.origin})});
 }
+export async function updatePassword(password:string){
+ const session=getSupabaseSession();if(!session)throw new Error('Link de redefinição inválido ou expirado.');
+ return supabaseRequest('/auth/v1/user',{method:'PUT',body:JSON.stringify({password})},session.access_token);
+}
 export async function consumeAuthRedirect():Promise<SupabaseSession|null>{
  const params=new URLSearchParams(location.hash.replace(/^#/,''));
  const access_token=params.get('access_token'),refresh_token=params.get('refresh_token');

@@ -25,3 +25,9 @@ export async function uploadLocalData(userId:string,data:CloudData){
 export async function deleteCloudRecord(table:'students'|'course_classes',id:string){
  await supabaseRequest(`/rest/v1/${table}?id=eq.${encodeURIComponent(id)}`,{method:'DELETE',headers:{Prefer:'return=minimal'}},token());
 }
+
+export async function clearCloudOperationalData(){
+ await supabaseRequest('/rest/v1/audit_logs?owner_id=not.is.null',{method:'DELETE',headers:{Prefer:'return=minimal'}},token());
+ await supabaseRequest('/rest/v1/certificates?owner_id=not.is.null',{method:'DELETE',headers:{Prefer:'return=minimal'}},token());
+ await supabaseRequest('/rest/v1/students?owner_id=not.is.null',{method:'DELETE',headers:{Prefer:'return=minimal'}},token());
+}

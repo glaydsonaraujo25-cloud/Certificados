@@ -23,7 +23,7 @@ export async function signUp(email:string,password:string,name:string){
  if(result.access_token)saveSupabaseSession(result);return result;
 }
 export async function recoverPassword(email:string){
- return supabaseRequest('/auth/v1/recover',{method:'POST',body:JSON.stringify({email,redirect_to:location.origin})});
+ return supabaseRequest('/auth/v1/recover',{method:'POST',body:JSON.stringify({email,redirect_to:`${location.origin}/?recovery=1`})});
 }
 export async function updatePassword(password:string){
  const session=getSupabaseSession();if(!session)throw new Error('Link de redefinição inválido ou expirado.');
